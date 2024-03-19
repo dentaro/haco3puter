@@ -29,6 +29,8 @@
 #include <map>
 #include "M5Cardputer.h"
 
+// Speaker_Class speaker;
+float effectVal;
 bool enemyF = false;
 uint8_t enemyX = 0;
 uint8_t enemyY = 0;
@@ -44,7 +46,7 @@ static int menu_padding = 36;
 #define KEYBOARD_DATA 22//32
 #define KEYBOARD_CLK  19//33
 
-#define SPEAKER_PIN 25
+// #define SPEAKER_PIN 25
 
 #define MAPWH 16//マップのpixelサイズ
 // #define BUF_PNG_NUM 0

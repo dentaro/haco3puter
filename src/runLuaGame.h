@@ -5,6 +5,7 @@
 #include <FS.h>
 #include <M5GFX_DentaroUI.hpp>
 
+#include "M5Cardputer.h"
 
 #include "SPIFFS.h"
 #include "baseGame.h"

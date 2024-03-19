@@ -1,5 +1,6 @@
 #include "runLuaGame.h"
 
+
 #include <chrono> // std::chrono
 #include <thread> // std::this_thread
 
@@ -29,6 +30,7 @@ extern int HACO3_C13;
 extern int HACO3_C14;
 extern int HACO3_C15;
 extern MyTFT_eSprite tft;
+
 // extern LGFX_Sprite sprite64;
 // extern LGFX_Sprite sprite256[2][2];
 
@@ -82,7 +84,9 @@ extern uint8_t mainVol;
 extern String savedAppfileName;
 extern bool difffileF;//前と違うファイルを開こうとしたときに立つフラグ
 
-// extern Speaker_Class speaker;
+// M5_CARDPUTER M5Cardputer;
+// Speaker_Class speaker;
+
 
 extern std::vector<uint8_t> sprite64cnos_vector;
 extern int gameState;
@@ -320,15 +324,15 @@ int runLuaGame::l_tone(lua_State* L){
   int f = lua_tointeger(L, 2);//周波数
   int sl = lua_tointeger(L, 3);//音の長さ
 
-  // if(sl!=0){
-    // speaker.begin();
-    // speaker.setVolume(255);
-    // speaker.setChannelVolume(0, 255);
-    // speaker.tone(f,sl);
-    // delay(sl);
-    // speaker.stop();
-  // }
-  // ledcWriteTone(n, 0);    // 消音
+  if(sl!=0){
+    M5Cardputer.Speaker.begin();
+    M5Cardputer.Speaker.setVolume(127);
+    M5Cardputer.Speaker.setChannelVolume(0, 127);
+    M5Cardputer.Speaker.tone(f,sl);
+    delay(sl);
+    M5Cardputer.Speaker.stop();
+  }
+  ledcWriteTone(n, 0);    // 消音
 
   /// tone data (8bit unsigned wav)
   //ノイズ音
