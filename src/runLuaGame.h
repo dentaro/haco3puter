@@ -189,7 +189,29 @@ struct CameraObj {
     static int l_touch(lua_State* L);
     static int l_btnp(lua_State* L);
     static int l_sldr(lua_State* L);
-    
+
+    static int l_sin(lua_State* L);
+    static int l_cos(lua_State* L);
+
+    static int l_ceil(lua_State* L);
+    static int l_rnd(lua_State* L);
+    static int l_srnd(lua_State* L);
+    static int l_sgn(lua_State* L);
+    static int l_shl(lua_State* L);
+    static int l_shr(lua_State* L);
+    static int l_flr(lua_State* L);
+    static int l_min(lua_State* L);
+    static int l_mid(lua_State* L);
+    static int l_max(lua_State* L);
+    static int l_abs(lua_State* L);
+    static int l_sqrt(lua_State* L);
+    static int l_distance(lua_State* L);
+    static int l_atan2(lua_State* L);
+    static int l_band(lua_State* L);
+    static int l_bnot(lua_State* L);
+    static int l_bor(lua_State* L);
+    static int l_bxor(lua_State* L);
+
     // static int l_getip(lua_State* L);
     // static int l_iswifidebug(lua_State* L);
     // static int l_wifiserve(lua_State* L);

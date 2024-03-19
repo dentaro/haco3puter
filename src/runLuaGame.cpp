@@ -1316,7 +1316,7 @@ int runLuaGame::l_drawbox(lua_State* L) {
   float z = lua_tonumber(L, 5);
   int cn = lua_tointeger(L, 6);
   
-  if (cn != 0) { // NULL ではなく 0 と比較することを推奨します
+  if (cn != 0) { // NULL ではなく 0 と比較する
     self->col[0] = clist2[cn][0]; // 5bit
     self->col[1] = clist2[cn][1]; // 6bit
     self->col[2] = clist2[cn][2]; // 5bit
@@ -2731,9 +2731,102 @@ luaL_openlibs(L);
   lua_pushcclosure(L, l_cls, 1);
   lua_setglobal(L, "cls");
 
+  
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_rnd, 1);
+  lua_setglobal(L, "rnd");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_srnd, 1);
+  lua_setglobal(L, "srnd");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_sgn, 1);
+  lua_setglobal(L, "sgn");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_shl, 1);
+  lua_setglobal(L, "shl");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_shr, 1);
+  lua_setglobal(L, "shr");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_flr, 1);
+  lua_setglobal(L, "flr");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_min, 1);
+  lua_setglobal(L, "min");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_mid, 1);
+  lua_setglobal(L, "mid");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_max, 1);
+  lua_setglobal(L, "max");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_min, 1);
+  lua_setglobal(L, "min");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_abs, 1);
+  lua_setglobal(L, "abs");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_sqrt, 1);
+  lua_setglobal(L, "sqrt");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_distance, 1);
+  lua_setglobal(L, "distance");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_sin, 1);
+  lua_setglobal(L, "sin");
+
+  // lua_pushlightuserdata(L, this);
+  // lua_pushcclosure(L, l_gsin, 1);
+  // lua_setglobal(L, "gsin");
+
+  // lua_pushlightuserdata(L, this);
+  // lua_pushcclosure(L, l_gcos, 1);
+  // lua_setglobal(L, "gcos");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_cos, 1);
+  lua_setglobal(L, "cos");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_atan2, 1);
+  lua_setglobal(L, "atan2");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_band, 1);
+  lua_setglobal(L, "band");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_bnot, 1);
+  lua_setglobal(L, "bnot");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_bor, 1);
+  lua_setglobal(L, "bor");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_bxor, 1);
+  lua_setglobal(L, "bxor");
+
   lua_pushlightuserdata(L, this);
   lua_pushcclosure(L, l_creobj, 1);
   lua_setglobal(L, "creobj");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_ceil, 1);
+  lua_setglobal(L, "celi");
 
   lua_pushlightuserdata(L, this);
   lua_pushcclosure(L, l_creobj2, 1);
@@ -2982,6 +3075,197 @@ if (!runError) {
 }
 
 }
+
+int runLuaGame::l_sin(lua_State* L) {
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  float x = lua_tonumber(L, 1);
+  lua_pushnumber(L, sin(x));
+  return 1;
+}
+
+int runLuaGame::l_cos(lua_State* L) {
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  float x = lua_tonumber(L, 1);
+  lua_pushnumber(L, cos(x));
+  return 1;
+}
+
+
+int runLuaGame::l_atan2(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  float y = lua_tonumber(L, 1);//intに入れた時点でfloorされてる
+  float x = lua_tonumber(L, 2);//intに入れた時点でfloorされてる
+  lua_pushnumber(L, atan2(y, x));
+  return 1;
+}
+
+
+int runLuaGame::l_rnd(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  int n = lua_tointeger(L, 1);
+  n =  rand() % n;
+  lua_pushinteger(L, n);
+  return 1;
+}
+
+int runLuaGame::l_srnd(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  int s = lua_tointeger(L, 1);
+  srand(s);
+  // lua_pushinteger(L, 0);
+  return 0;
+}
+
+int runLuaGame::l_sgn(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  float x = lua_tonumber(L, 1);
+  if (x > 0) {
+    lua_pushinteger(L, 1);
+  } else if (x < 0) {
+    lua_pushinteger(L, -1);
+  } else {
+    lua_pushinteger(L, 0);
+  }
+  return 1;
+}
+
+int runLuaGame::l_shl(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  int x = lua_tointeger(L, 1);
+  int y = lua_tointeger(L, 2);
+  lua_pushinteger(L, x << y);
+  return 1;
+}
+
+int runLuaGame::l_shr(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  int x = lua_tointeger(L, 1);
+  int y = lua_tointeger(L, 2);
+  lua_pushinteger(L, x >> y);
+  return 1;
+}
+
+int runLuaGame::l_band(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  int x = lua_tointeger(L, 1);
+  int y = lua_tointeger(L, 2);
+  lua_pushinteger(L, x & y);
+  return 1;
+}
+
+int runLuaGame::l_bnot(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  int x = lua_tointeger(L, 1);
+  lua_pushinteger(L, ~x);
+  return 1;
+}
+
+int runLuaGame::l_bor(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  int x = lua_tointeger(L, 1);
+  int y = lua_tointeger(L, 2);
+  lua_pushinteger(L, x | y);
+  return 1;
+}
+
+int runLuaGame::l_bxor(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  int x = lua_tointeger(L, 1);
+  int y = lua_tointeger(L, 2);
+  lua_pushinteger(L, x ^ y);
+  return 1;
+}
+
+
+int runLuaGame::l_ceil(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  float n = lua_tonumber(L, 1);//
+  int in =  (int)ceil(n);
+  lua_pushinteger(L, in);
+  return 1;
+}
+
+int runLuaGame::l_flr(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  int n = lua_tonumber(L, 1);//intに入れた時点でfloorされてる
+  // n =  (int)floor(n);
+  lua_pushinteger(L, n);
+  return 1;
+}
+
+int runLuaGame::l_max(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  float a = lua_tonumber(L, 1);
+  float b = lua_tonumber(L, 2);
+  if (a > b){
+    lua_pushnumber(L, a);
+  }else{
+    lua_pushnumber(L, b);
+  }
+  return 1;
+}
+
+int runLuaGame::l_mid(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  float x = lua_tonumber(L, 1);
+  float y = lua_tonumber(L, 2);
+  float z = lua_tonumber(L, 3);
+
+      if ((x <= y && y <= z) || (z <= y && y <= x)) {
+          lua_pushnumber(L, y);
+      }
+      else if ((y <= x && x <= z) || (z <= x && x <= y)) {
+          lua_pushnumber(L, x);
+      }
+      else {
+          lua_pushnumber(L, z);
+      }
+  return 1;
+}
+
+int runLuaGame::l_min(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  float a = lua_tonumber(L, 1);
+  float b = lua_tonumber(L, 2);
+  if (a < b){
+    lua_pushnumber(L, a);
+  }else{
+    lua_pushnumber(L, b);
+  }
+  return 1;
+}
+
+
+int runLuaGame::l_abs(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  float x = lua_tonumber(L, 1);
+  if (x < 0) {
+        lua_pushnumber(L, -x);
+    } else {
+        lua_pushnumber(L, x);
+    }
+  return 1;
+}
+
+int runLuaGame::l_sqrt(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  float x = lua_tonumber(L, 1);
+  lua_pushnumber(L, sqrt(x));
+  return 1;
+}
+
+int runLuaGame::l_distance(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  float x1 = lua_tonumber(L, 1);
+  float y1 = lua_tonumber(L, 2);
+  float x2 = lua_tonumber(L, 3);
+  float y2 = lua_tonumber(L, 4);
+
+  float dx = x2 - x1;
+  float dy = y2 - y1;
+  lua_pushnumber(L, sqrt(dx*dx + dy*dy));
+  return 1;
+} 
 
 #define TFT_WIDTH_HALF 80
 #define TFT_HEIGHT_HALF 64

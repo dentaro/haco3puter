@@ -1259,9 +1259,15 @@ void loop()
         }
 
         for (auto i : status.word) {
+
+          Point2D_t myPoint;
+          myPoint.x = 2;
+          myPoint.y = 2;
+
+          keychar = M5Cardputer.Keyboard.getKey(myPoint);
               
-        data = i;
-        keychar = int(i);
+        // data = i;
+        // keychar = int(i);
 
         if (M5Cardputer.Keyboard.isKeyPressed(PS2_ENTER)) {
         // Serial.println();
