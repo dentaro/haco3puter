@@ -1245,10 +1245,10 @@ void loop()
         Keyboard_Class::KeysState status = M5Cardputer.Keyboard.keysState();
 
         
-        if (status.del) {
-          pressedBtnID = 5;
-            // data.remove(data.length() - 1);
-        }
+        // if (status.del) {
+        //   pressedBtnID = 5;
+        //     // data.remove(data.length() - 1);
+        // }
 
         if (status.enter) {
           pressedBtnID = 6;
@@ -1273,7 +1273,7 @@ void loop()
         // Serial.println();
       } else if (M5Cardputer.Keyboard.isKeyPressed(PS2_TAB)) {
         // pressedBtnID = 7;
-      } else if (M5Cardputer.Keyboard.isKeyPressed('~')) {
+      } else if (M5Cardputer.Keyboard.isKeyPressed('|')) {
         pressedBtnID = 0;
       } else if (M5Cardputer.Keyboard.isKeyPressed(',')) {
         pressedBtnID = 1;
@@ -1284,13 +1284,13 @@ void loop()
       } else if (M5Cardputer.Keyboard.isKeyPressed('.')) {
         pressedBtnID = 4;
       }else if (M5Cardputer.Keyboard.isKeyPressed('<')) {
-        pressedBtnID = 5;
-      } else if (M5Cardputer.Keyboard.isKeyPressed('?')) {
-        pressedBtnID = 6;
-      } else if (M5Cardputer.Keyboard.isKeyPressed(':')) {
         pressedBtnID = 7;
-      } else if (M5Cardputer.Keyboard.isKeyPressed('>')) {
+      } else if (M5Cardputer.Keyboard.isKeyPressed('?')) {
         pressedBtnID = 8;
+      } else if (M5Cardputer.Keyboard.isKeyPressed(':')) {
+        pressedBtnID = 5;
+      } else if (M5Cardputer.Keyboard.isKeyPressed('>')) {
+        pressedBtnID = 6;
       }else if (M5Cardputer.Keyboard.isKeyPressed(PS2_DELETE)) {
         editor.editorProcessKeypress(keychar, SPIFFS);
         Serial.println("[Del]");
@@ -1388,7 +1388,7 @@ void loop()
     }
 
     // ui.showTouchEventInfo( tft, 0, 100 );//タッチイベントを視覚化する
-    ui.showInfo( tft, 0, 100+8 );//ボタン情報、フレームレート情報などを表示します。
+    // ui.showInfo( tft, 0, 100+8 );//ボタン情報、フレームレート情報などを表示します。
 
     if(enemyF){
 
@@ -1406,10 +1406,10 @@ void loop()
 
      //最終出力
     tft.setPivot(0, 0);
-    tft.pushRotateZoom(&M5Cardputer.Display, 30, 0, 0, 1, 1);
+    tft.pushRotateZoom(&M5Cardputer.Display, 40, 3, 0, 1, 1);
 
     if(pressedBtnID == 5){//PAGEUP//キーボードからエディタ再起動
-      restart(appfileName, 1);//appmodeでリスタートかけるので、いらないかも
+      // restart(appfileName, 1);//appmodeでリスタートかけるので、いらないかも
     }
   }
   else if(isEditMode == TFT_EDIT_MODE)

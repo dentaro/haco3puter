@@ -4461,11 +4461,11 @@ int runLuaGame::run(int _remainTime){
     }
 
   //show FPS:ms
-  tft.setTextColor(TFT_WHITE, TFT_BLUE);
-  tft.setCursor(90, 127 - 16);
-  tft.print(String(1000/_remainTime) + "FPS");
-  tft.setCursor(90, 127 - 8);
-  tft.print(String(_remainTime) + "ms");
+  // tft.setTextColor(TFT_WHITE, TFT_BLUE);
+  // tft.setCursor(90, 127 - 16);
+  // tft.print(String(1000/_remainTime) + "FPS");
+  // tft.setCursor(90, 127 - 8);
+  // tft.print(String(_remainTime) + "ms");
 
   return 0;
 }

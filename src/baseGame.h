@@ -1,7 +1,7 @@
 #ifndef BASE_GAME_H
 #define BASE_GAME_H
 
-#define CTRLBTNNUM 1//ゲームに使えるサイドボタン数を決めます9
+// #define CTRLBTNNUM 1//ゲームに使えるサイドボタン数を決めます9
 #define CALIBRATION_FILE "/init/param/caldata.txt"
 #define MAPSPRNOS_FILE "/init/param/mapsprnos.txt"//色番号に対応するスプライトを登録するファイル
 #define WIFIPASS_FILE "/init/param/wifipass.txt"
