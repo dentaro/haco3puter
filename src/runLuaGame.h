@@ -130,6 +130,7 @@ struct CameraObj {
     lua_State* L;
     luaL_Buffer b;
     uint8_t  col[3] = {0,0,0};
+    uint8_t  col2[3] = {0,0,0};
 
     // std::deque<int> buttonState;//ボタンの個数未定
     // int touchState;//タッチボタン
@@ -158,6 +159,7 @@ struct CameraObj {
     // static int l_tp(lua_State* L);
     // static int l_tstat(lua_State* L);
     static int l_vol(lua_State* L);
+    static int l_print(lua_State* L);
     static int l_pinw(lua_State* L);
     static int l_pinr(lua_State* L);
     static int l_tone(lua_State* L);
@@ -168,6 +170,15 @@ struct CameraObj {
     static int l_pset(lua_State* L);
     static int l_pget(lua_State* L);
     static int l_cls(lua_State* L);
+    static int l_mget(lua_State* L);
+    static int l_map(lua_State* L);
+
+    static int l_fget(lua_State* L);
+    static int l_fset(lua_State* L);
+    static int l_sfx(lua_State* L);
+    static int l_go2(lua_State* L);
+    static int l_gstat(lua_State* L);
+
     static int l_color(lua_State* L);
     static int l_text(lua_State* L);
     static int l_opmode(lua_State* L);

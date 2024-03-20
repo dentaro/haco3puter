@@ -818,8 +818,6 @@ void setOpenConfig(String fileName, uint8_t _isEditMode) {
   fw.close(); // ファイルを閉じる
 }
 
-
-
 int readMap()
 {
   mapready = false;
@@ -1197,7 +1195,7 @@ void setup()
   }
 
   //破棄
-  sprite64.deleteSprite();
+  // sprite64.deleteSprite();
 
   //psram使えない-------------------------------------------
 
@@ -1215,13 +1213,11 @@ void setup()
 
   // if(firstBootF == true)
   // {
-  // createAbsUI();
   // appfileName = "/min/main.lua";
   // isEditMode = 0;
   // mapFileName = "/init/map/0.png";
-  // readMap();
-  // delay(50);
-    
+  readMap();
+  delay(50);
   game = nextGameObject(&appfileName, gameState, mapFileName);//ホームゲームを立ち上げる（オブジェクト生成している）
   game->init();//（オブジェクト生成している）
   // tunes.init();//（オブジェクト生成している）
