@@ -10,18 +10,18 @@ px=0
 py=0
 wstat=1
 function input()
-  -- if btn(1) >= 1 then wx = wx-1 end
-  -- if btn(2) >= 1 then wx = wx+1 end
-  -- if btn(3) >= 1 then wy = wy-1 end
-  -- if btn(4) >= 1 then wy = wy+1 end
-  if btnp(1) then wx = wx-1 end
-  if btnp(2) then wx = wx+1 end
-  if btnp(3) then wy = wy-1 end
-  if btnp(4) then wy = wy+1 end
+  if btn(1) >= 1 then wx = wx-1 end
+  if btn(2) >= 1 then wx = wx+1 end
+  if btn(3) >= 1 then wy = wy-1 end
+  if btn(4) >= 1 then wy = wy+1 end
+  -- if btnp(1) then wx = wx-1 end
+  -- if btnp(2) then wx = wx+1 end
+  -- if btnp(3) then wy = wy-1 end
+  -- if btnp(4) then wy = wy+1 end
 end
 
 function _init()--1回だけ
-  pal(1)
+  pal(0)
 end
 function _update()
   input()
