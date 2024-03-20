@@ -28,4 +28,7 @@ void M5_CARDPUTER::update(void) {
     }
 }
 
-
+// void M5_CARDPUTER::getKey(void) {
+// // キーコードを取り出す
+//     return Keyboard.getKeyValue(0).first;
+// }

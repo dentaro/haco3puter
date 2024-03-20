@@ -166,6 +166,7 @@ class Keyboard_Class {
     inline KeysState& keysState() {
         return _keys_state_buffer;
     }
+    
 
     inline bool capslocked(void) {
         return _is_caps_locked;
