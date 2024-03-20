@@ -30,6 +30,7 @@
 #include "M5Cardputer.h"
 
 bool textMoveF = false;
+bool shiftF = false;
 
 float effectVal;
 bool enemyF = false;
@@ -1252,6 +1253,10 @@ void loop()
           textMoveF=!textMoveF;//スイッチング
         }
 
+        if (status.shift) {
+          shiftF=!shiftF;//スイッチング
+        }
+
         if (status.enter) {
           pressedBtnID = 6;
         }
@@ -1260,15 +1265,15 @@ void loop()
         for (auto i : status.word) {
           Point2D_t keyPos;
           keyPos = M5Cardputer.Keyboard.keyList().at(0);//直前に押されたキーのxy要素を取り出す
+          
+          // keychar = M5Cardputer.Keyboard.getKeyValue(keyPos).value_first;
 
-          keychar = M5Cardputer.Keyboard.getKeyValue(keyPos).value_first;
-
-          // if(!status.shift){
-          //   keychar = M5Cardputer.Keyboard.getKeyValue(keyPos).value_first;//対応する文字コードを格納
-          // }
-          // else if(status.shift){
-          //   keychar = M5Cardputer.Keyboard.getKeyValue(keyPos).value_second;//対応する文字コードを格納
-          // }
+          if(!shiftF){
+            keychar = M5Cardputer.Keyboard.getKeyValue(keyPos).value_first;//対応する文字コードを格納
+          }
+          else if(shiftF){
+            keychar = M5Cardputer.Keyboard.getKeyValue(keyPos).value_second;//対応する文字コードを格納
+          }
 
         
         // if (status.fn&&keychar == PS2_LEFTARROW) {keychar = PS2_LEFTARROW;editor.editorProcessKeypress(keychar, SPIFFS);}
@@ -1346,6 +1351,11 @@ void loop()
       
         }
 
+      }
+
+      if (status.enter) {
+        keychar = PS2_ENTER;
+        editor.editorProcessKeypress(keychar, SPIFFS);
       }
 
       if (status.del) {
@@ -1485,7 +1495,10 @@ void loop()
     else
     tft.fillRect(156,0, 4,128, HACO3_C9);//コードの全体の長さを表示
 
+    if(!shiftF)
     tft.fillRect(156,int(codepos), 4,codelen, HACO3_C6);//コードの位置と範囲を表示
+    else
+    tft.fillRect(156,int(codepos), 4,codelen, HACO3_C12);//コードの位置と範囲を表示
 
     if(curpos>=int(codepos)+codelen)//すこしはみ出たら表示コード内に入れる
     {
