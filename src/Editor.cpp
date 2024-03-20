@@ -558,7 +558,7 @@ void Editor::editorSetStatusMessage(const char *fmt, ...) {
   E.statusmsg_time = time(NULL);
 }
 
-void Editor::editorDrawStatusBar(LGFX_Sprite& tft, struct abuf *ab) {
+void Editor::editorDrawStatusBar(M5Canvas& tft, struct abuf *ab) {
 
   // tft.setTextSize(1);
   // tft.setFont(&lgfxJapanGothicP_8);
@@ -622,7 +622,7 @@ int Editor::getScreenRow(){
   return E.screencol;
 }
 
-void Editor::editorDrawMessageBar(LGFX_Sprite& tft, struct abuf *ab) {
+void Editor::editorDrawMessageBar(M5Canvas& tft, struct abuf *ab) {
   tft.setTextColor(HACO3_C4);
   tft.print(E.statusmsg);
   tft.print(E.statusmsg_time);
@@ -632,7 +632,7 @@ void Editor::editorDrawMessageBar(LGFX_Sprite& tft, struct abuf *ab) {
   //   abAppend(ab, E.statusmsg, msglen);
 }
 
-// void Editor::editorRefreshScreen(LGFX_Sprite& tft) {
+// void Editor::editorRefreshScreen(M5Canvas& tft) {
  
 //   struct abuf ab = ABUF_INIT;
 //   // screen.fillScreen(TFT_DARKGREEN);
@@ -662,7 +662,7 @@ void Editor::editorDrawMessageBar(LGFX_Sprite& tft, struct abuf *ab) {
 
 // }
 
-void Editor::editorRefreshScreen(LGFX_Sprite& tft) {
+void Editor::editorRefreshScreen(M5Canvas& tft) {
     struct abuf ab = ABUF_INIT;
     
     tft.fillScreen(HACO3_C0);
@@ -824,7 +824,7 @@ void Editor::setCursor(int _cx,int _cy,int _rx) {
     // setCursorConfig();//外部ファイルに保存
 }
 
-void Editor::initEditor(LGFX_Sprite& tft) {
+void Editor::initEditor(M5Canvas& tft) {
   
   if(!difffileF){
     getCursorConfig("/init/param/editor.txt");//カーソル位置を取得
@@ -998,14 +998,14 @@ void Editor::writeFile(fs::FS &fs, const char * path, const char * message){
 //   }
 // }
 
-// void Editor::update(LGFX_Sprite& tft, fs::FS &fs, fs::FS &SD, char _keychar) { 
+// void Editor::update(M5Canvas& tft, fs::FS &fs, fs::FS &SD, char _keychar) { 
 
 //     editorProcessKeypress(_keychar, fs, SD);
 //     editorRefreshScreen(tft);
 
 // }
 
-void Editor::update(LGFX_Sprite& tft, fs::FS &fs, int _keychar) { 
+void Editor::update(M5Canvas& tft, fs::FS &fs, int _keychar) { 
 
     editorProcessKeypress(_keychar, fs);
     // editorRefreshScreen(tft);

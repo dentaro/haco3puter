@@ -324,25 +324,25 @@ const uint8_t RGBValues[][3] PROGMEM = {//16bit用
 // M5GFX M5Cardputer.Display;//LGFXを継承
 
 M5GFX_DentaroUI ui(&M5Cardputer.Display);
-LGFX_Sprite tft(&M5Cardputer.Display);
-// LGFX_Sprite scaler(&M5Cardputer.Display);
+M5Canvas tft(&M5Cardputer.Display);
+// M5Canvas scaler(&M5Cardputer.Display);
 
 // #include "MapDictionary.h"
 // MapDictionary& dict = MapDictionary::getInstance();
 
-LGFX_Sprite sprite88_roi = LGFX_Sprite(&tft);
-LGFX_Sprite sprite11_roi = LGFX_Sprite(&tft);
-LGFX_Sprite sprite64 = LGFX_Sprite();
+M5Canvas sprite88_roi = M5Canvas(&tft);
+M5Canvas sprite11_roi = M5Canvas(&tft);
+M5Canvas sprite64 = M5Canvas();
 // uint8_t sprite64cnos[4096];//64*64
 
 // uint8_t sprite64cnos[PNG_SPRITE_HEIGHT * PNG_SPRITE_WIDTH];//64*128
 std::vector<uint8_t> sprite64cnos_vector;
 
-LGFX_Sprite buffSprite = LGFX_Sprite(&tft);
-LGFX_Sprite sprite88_0 = LGFX_Sprite(&tft);
+M5Canvas buffSprite = M5Canvas(&tft);
+M5Canvas sprite88_0 = M5Canvas(&tft);
 
-// LGFX_Sprite mapTileSprites[1];
-// static LGFX_Sprite sliderSprite( &tft );//スライダ用
+// M5Canvas mapTileSprites[1];
+// static M5Canvas sliderSprite( &tft );//スライダ用
 
 BaseGame* game;
 // Tunes tunes;
@@ -357,8 +357,8 @@ int readmapno = 0;
 int divnum = 1;
 bool readMapF = false;
 //divnumが大きいほど少ない領域で展開できる(2の乗数)
-// LGFX_Sprite spritebg[16];//16種類のスプライトを背景で使えるようにする
-LGFX_Sprite spriteMap;//地図用スプライト
+// M5Canvas spritebg[16];//16種類のスプライトを背景で使えるようにする
+M5Canvas spriteMap;//地図用スプライト
 
 // uint8_t mapArray[MAPWH][MAPWH];
 // uint8_t mapArray[MAPH][MAPW];
@@ -400,8 +400,19 @@ float ztile = 0.0;
 int xtileNo = 29100;
 int ytileNo = 12909;
 
-LGFX_Sprite sprref;
+M5Canvas sprref;
 String oldKeys[BUF_PNG_NUM];
+
+uint8_t gIMGBuf88_0[32];
+uint8_t gIMGBuf64[8192];
+uint8_t gIMGBuf2[32768];
+
+/** 画像をSPIFFSから読み込む */
+void readIMG() {
+  auto file = SPIFFS.open("/init/initspr.png", "r");
+  file.read(gIMGBuf64, 8192);
+  file.close();
+}
 
 int vol_value; //analog値を代入する変数を定義
 int statebtn_value; //analog値を代入する変数を定義
@@ -816,6 +827,13 @@ int readMap()
   for(int n = 0; n<divnum; n++)
   {
     // spriteMap.drawPngFile( SPIFFS, mapFileName, 0, (int32_t)(-MAPWH*n/divnum) );
+
+  auto file = SPIFFS.open(mapFileName.c_str(), "r");
+  file.read(gIMGBuf2, 32768);
+  file.close();
+
+  spriteMap.drawPng(gIMGBuf2,32768, 0, (int32_t)(-MAPWH*n/divnum));
+    
     for(int32_t j = 0; j<MAPWH/divnum; j++){
       for(int32_t i = 0; i<MAPWH; i++){
 
@@ -1094,6 +1112,7 @@ void safeReboot(){
       reboot(appfileName, TFT_RUN_MODE);//現状rebootしないと初期化が完全にできない
 }
 
+
 void setup()
 {
 
@@ -1134,6 +1153,7 @@ void setup()
     }
   }
   
+  readIMG();
 
   getOpenConfig();//最初に立ち上げるゲームのパスとモードをSPIFFSのファイルopenconfig.txtから読み込む
 
@@ -1151,17 +1171,19 @@ void setup()
   sprite88_0.setColorDepth(16);//子スプライトの色深度
   sprite88_0.createSprite(8, 8);//ゲーム画面用スプライトメモリ確保
 
-  ui.drawPngFile(sprite88_0, &SPIFFS, "/init/sprite.png", 0, 0);
-  
-  // M5Cardputer.Display.drawPngFile(SD, "/init/sprite.png", 0, 0);
-  // sprite88_0.drawPngFile(SPIFFS, "/init/sprite.png", -8*1, -8*0);
-  // sprite88_0.releasePngMemory();
+  // auto file = SPIFFS.open(mapFileName.c_str(), "r");
+  // file.read(gIMGBuf88_0, 32);
+  // file.close();
+
+  sprite88_0.drawPng(gIMGBuf88_0, 32,0,0);
 
   sprite64.setPsram(false );
   sprite64.setColorDepth(16);//子スプライトの色深度
   sprite64.createSprite(PNG_SPRITE_WIDTH, PNG_SPRITE_HEIGHT);//ゲーム画面用スプライトメモリ確保//wroomだと64*128だとメモリオーバーしちゃう問題を色番号配列にして回避した
 
   // sprite64.drawPngFile(SPIFFS, "/init/initspr.png", 0, 0);//一時展開する
+  // sprite64.drawBmpFile(SPIFFS, "/init/initspr.bmp", 0, 0);//一時展開する
+  sprite64.drawPng(gIMGBuf64, 8192,0,0);
 
   sprite64cnos_vector.clear();//初期化処理
 

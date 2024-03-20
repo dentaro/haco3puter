@@ -216,15 +216,15 @@ class Editor {
 
   public:
     Editor();
-    void editorDrawMessageBar(LGFX_Sprite& tft, struct abuf *ab);
-    void editorDrawStatusBar(LGFX_Sprite& tft, struct abuf *ab);
-    void initEditor(LGFX_Sprite& tft);
+    void editorDrawMessageBar(M5Canvas& tft, struct abuf *ab);
+    void editorDrawStatusBar(M5Canvas& tft, struct abuf *ab);
+    void initEditor(M5Canvas& tft);
     void readFile(fs::FS &fs, const char * path);
     void editorOpen(fs::FS &fs, const char *filename);
     void editorUpdateRow(erow *row);
     void editorInsertRow(int at, const char *s, size_t len);
     void editorInsertRow2(int at, const char *s, size_t len);//改行付き
-    void editorRefreshScreen(LGFX_Sprite& tft);
+    void editorRefreshScreen(M5Canvas& tft);
     void editorScroll();
     int editorRowCxToRx(erow *row, int cx);
     void editorDrawRows(struct abuf *ab);
@@ -267,9 +267,9 @@ class Editor {
     void editorPageMove(char c);
 
     int utf8_char_width(char c);
-    // void update(LGFX_Sprite& tft,fs::FS &fs, fs::FS &SD, KbdRptParser &Prs);
-    // void update(LGFX_Sprite& tft, fs::FS &fs, fs::FS &SD, char _keychar);
-    void update(LGFX_Sprite& tft, fs::FS &fs, int _keychar);
+    // void update(M5Canvas& tft,fs::FS &fs, fs::FS &SD, KbdRptParser &Prs);
+    // void update(M5Canvas& tft, fs::FS &fs, fs::FS &SD, char _keychar);
+    void update(M5Canvas& tft, fs::FS &fs, int _keychar);
     void writeFile(fs::FS &fs, const char * path, const char * message);
     void appendFile(fs::FS &fs, const char * path, const char * message);
 

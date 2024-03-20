@@ -31,8 +31,8 @@ extern int HACO3_C14;
 extern int HACO3_C15;
 extern MyTFT_eSprite tft;
 
-// extern LGFX_Sprite sprite64;
-// extern LGFX_Sprite sprite256[2][2];
+// extern M5Canvas sprite64;
+// extern M5Canvas sprite256[2][2];
 
 extern uint8_t sprno;
 extern uint8_t repeatnum;
@@ -40,7 +40,7 @@ extern uint8_t repeatnum;
 // extern std::vector<uint8_t> rowData;
 std::vector<std::vector<uint8_t>> rowData(16);
 
-extern LGFX_Sprite sprite88_roi;
+extern M5Canvas sprite88_roi;
 extern String appfileName;
 extern void startWifiDebug(bool isSelf);
 extern void setFileName(String s);
