@@ -532,10 +532,12 @@ void Editor::editorProcessKeypress(int c, fs::FS &fs) {
       }
       break;
     case PS2_UPARROW:
+      editorMoveCursor(c);
     case PS2_DOWNARROW:
+      editorMoveCursor(c);
     case PS2_LEFTARROW:
+      editorMoveCursor(c);
     case PS2_RIGHTARROW:
-    
       editorMoveCursor(c);
     
       break;

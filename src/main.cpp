@@ -29,7 +29,8 @@
 #include <map>
 #include "M5Cardputer.h"
 
-// Speaker_Class speaker;
+bool textMoveF = false;
+
 float effectVal;
 bool enemyF = false;
 uint8_t enemyX = 0;
@@ -1243,39 +1244,40 @@ void loop()
   
   
   if (M5Cardputer.Keyboard.isChange()) {
+    
     if (M5Cardputer.Keyboard.isPressed()) {
-        Keyboard_Class::KeysState status = M5Cardputer.Keyboard.keysState();
+      Keyboard_Class::KeysState status = M5Cardputer.Keyboard.keysState();//キー状態を取得しておく
 
-        
-        // if (status.del) {
-        //   pressedBtnID = 5;
-        //     // data.remove(data.length() - 1);
-        // }
+        if (status.fn) {
+          textMoveF=!textMoveF;//スイッチング
+        }
 
         if (status.enter) {
           pressedBtnID = 6;
-            // data.remove(0, 2);
-            // canvas.println(data);
-            // canvas.pushSprite(4, 4);
-            // data = "> ";
         }
+        
 
         for (auto i : status.word) {
+          Point2D_t keyPos;
+          keyPos = M5Cardputer.Keyboard.keyList().at(0);//直前に押されたキーのxy要素を取り出す
 
-          Point2D_t myPoint;
-          myPoint.x = 2;
-          myPoint.y = 2;
+          keychar = M5Cardputer.Keyboard.getKeyValue(keyPos).value_first;
 
-          keychar = M5Cardputer.Keyboard.getKey(myPoint);
-              
-        // data = i;
-        // keychar = int(i);
+          // if(!status.shift){
+          //   keychar = M5Cardputer.Keyboard.getKeyValue(keyPos).value_first;//対応する文字コードを格納
+          // }
+          // else if(status.shift){
+          //   keychar = M5Cardputer.Keyboard.getKeyValue(keyPos).value_second;//対応する文字コードを格納
+          // }
 
-        if (M5Cardputer.Keyboard.isKeyPressed(PS2_ENTER)) {
-        // Serial.println();
-      } else if (M5Cardputer.Keyboard.isKeyPressed(PS2_TAB)) {
-        // pressedBtnID = 7;
-      } else if (M5Cardputer.Keyboard.isKeyPressed('|')) {
+        
+        // if (status.fn&&keychar == PS2_LEFTARROW) {keychar = PS2_LEFTARROW;editor.editorProcessKeypress(keychar, SPIFFS);}
+        // if (status.fn&&keychar == PS2_DOWNARROW) {keychar = PS2_DOWNARROW;editor.editorProcessKeypress(keychar, SPIFFS);}
+        // if (status.fn&&keychar == PS2_UPARROW) {keychar = PS2_UPARROW;editor.editorProcessKeypress(keychar, SPIFFS);}
+
+        if (isEditMode == TFT_RUN_MODE) {
+        
+        if (M5Cardputer.Keyboard.isKeyPressed('~')) {
         pressedBtnID = 0;
       } else if (M5Cardputer.Keyboard.isKeyPressed(',')) {
         pressedBtnID = 1;
@@ -1286,35 +1288,77 @@ void loop()
       } else if (M5Cardputer.Keyboard.isKeyPressed('.')) {
         pressedBtnID = 4;
       }else if (M5Cardputer.Keyboard.isKeyPressed('<')) {
+        // keychar = PS2_LEFTARROW;editor.editorProcessKeypress(keychar,SPIFFS);
         pressedBtnID = 7;
       } else if (M5Cardputer.Keyboard.isKeyPressed('?')) {
+        // keychar = PS2_RIGHTARROW;editor.editorProcessKeypress(keychar,SPIFFS);
         pressedBtnID = 8;
       } else if (M5Cardputer.Keyboard.isKeyPressed(':')) {
+        // keychar = PS2_UPARROW;editor.editorProcessKeypress(keychar,SPIFFS);
         pressedBtnID = 5;
       } else if (M5Cardputer.Keyboard.isKeyPressed('>')) {
+        // keychar = PS2_DOWNARROW;editor.editorProcessKeypress(keychar,SPIFFS);
         pressedBtnID = 6;
-      }else if (M5Cardputer.Keyboard.isKeyPressed(PS2_DELETE)) {
-        editor.editorProcessKeypress(keychar, SPIFFS);
-        Serial.println("[Del]");
+      } else if (M5Cardputer.Keyboard.isKeyPressed('|')) {
+        pressedBtnID = 9;
       } else {
         
         //通常の文字
         if(keychar != -1){
-        editor.editorProcessKeypress(keychar, SPIFFS);
-        Serial.println(keychar);
+          editor.editorProcessKeypress(keychar, SPIFFS);
+          // Serial.println(keychar);
+          }
+          // Serial.println(keychar);
         }
-        // Serial.println(keychar);
-      }
+
+      }else if (isEditMode == TFT_EDIT_MODE) {
 
         
+        if(textMoveF){
+          
+             if (M5Cardputer.Keyboard.isKeyPressed(',')) {
+            keychar = PS2_LEFTARROW;editor.editorMoveCursor(keychar);
+          } else if (M5Cardputer.Keyboard.isKeyPressed('/')) {
+            keychar = PS2_RIGHTARROW;editor.editorMoveCursor(keychar);
+          } else if (M5Cardputer.Keyboard.isKeyPressed(';')) {
+            keychar = PS2_UPARROW;editor.editorMoveCursor(keychar);
+          } else if (M5Cardputer.Keyboard.isKeyPressed('.')) {
+            keychar = PS2_DOWNARROW;editor.editorMoveCursor(keychar);
+          } else if (M5Cardputer.Keyboard.isKeyPressed('`')) {
+            pressedBtnID = 0;
+          } 
+        }else{
+
+          if (M5Cardputer.Keyboard.isKeyPressed('~')) {
+            pressedBtnID = 0;
+          } else if (M5Cardputer.Keyboard.isKeyPressed('|')) {
+            pressedBtnID = 9;
+          } else {
+            
+            //通常の文字
+            if(keychar != -1){
+              editor.editorProcessKeypress(keychar, SPIFFS);
+              // Serial.println(keychar);
+              }
+              // Serial.println(keychar);
+            }
+        }
+      
+        }
+
       }
+
+      if (status.del) {
+        keychar = PS2_DELETE;
+        editor.editorProcessKeypress(keychar, SPIFFS);
+      }      
     }
   }
 
   // editor.update(tft, SPIFFS, SD, keychar);
 
   if(pressedBtnID != -1){
-    editor.update(tft, SPIFFS, keychar);
+    // editor.update(tft, SPIFFS, keychar);
   }
   
   // if(pressedBtnID == -1){
@@ -1350,6 +1394,16 @@ void loop()
 
     // == game task ==
     mode = game->run(remainTime);//exitは1が返ってくる　mode=１ 次のゲームを起動
+
+    if(pressedBtnID == 9){//(|)
+    // appfileName = 
+      editor.editorSave(SPIFFS);//SPIFFSに保存
+      delay(100);//ちょっと待つ
+      reboot(appfileName, TFT_EDIT_MODE);//現状rebootしないと初期化が完全にできない
+      // restart(appfileName, 0);//初期化がうまくできない（スプライトなど）
+      // broadchat();//ファイルの中身をブロードキャスト送信する（ファイルは消えない）
+    }
+
 
     //ESCボタンで強制終了
     if (pressedBtnID == 0)
@@ -1410,52 +1464,57 @@ void loop()
     tft.setPivot(0, 0);
     tft.pushRotateZoom(&M5Cardputer.Display, 40, 3, 0, 1, 1);
 
-    if(pressedBtnID == 5){//PAGEUP//キーボードからエディタ再起動
+    if(pressedBtnID == 5){//PAGEUP(:)//キーボードからエディタ再起動
       // restart(appfileName, 1);//appmodeでリスタートかけるので、いらないかも
     }
   }
   else if(isEditMode == TFT_EDIT_MODE)
   {
-    // editor.editorRefreshScreen(tft);
+    editor.editorRefreshScreen(tft);
 
-    // float codeunit = 128.0/float(editor.getNumRows());
-    // float codelen = codeunit * 14;//14は表示行数
+    float codeunit = 128.0/float(editor.getNumRows());
+    float codelen = codeunit * 14;//14は表示行数
     // int codelen = int(codelen_f + 0.5); // 四捨五入して整数に変換する
     
-    // float curpos = codeunit*editor.getCy();
-    // float codepos = codeunit * (editor.getCy() - editor.getScreenRow());
+    float curpos = codeunit*editor.getCy();
+    float codepos = codeunit * (editor.getCy() - editor.getScreenRow());
     // int codepos = int(codepos_f + 0.5); // 四捨五入して整数に変換する
     
-    // tft.fillRect(156,0, 4,128, HACO3_C5);//コードの全体の長さを表示
-    // tft.fillRect(156,int(codepos), 4,codelen, HACO3_C6);//コードの位置と範囲を表示
+    if(!textMoveF)
+    tft.fillRect(156,0, 4,128, HACO3_C5);//コードの全体の長さを表示
+    else
+    tft.fillRect(156,0, 4,128, HACO3_C9);//コードの全体の長さを表示
 
-    // if(curpos>=int(codepos)+codelen)//すこしはみ出たら表示コード内に入れる
-    // {
-    //   if(codeunit>=1)curpos = int(codepos)+codelen - codeunit;
-    //   else curpos = int(codepos)+codelen - 1;
-    // }
+    tft.fillRect(156,int(codepos), 4,codelen, HACO3_C6);//コードの位置と範囲を表示
 
-    // if(codeunit>=1){tft.fillRect(155, int(curpos), 4, codeunit, HACO3_C8);}//コードの位置と範囲を表示
-    // else{tft.fillRect(155, int(curpos), 4, 1, HACO3_C8);}//１ピクセル未満の時は見えなくなるので１に
+    if(curpos>=int(codepos)+codelen)//すこしはみ出たら表示コード内に入れる
+    {
+      if(codeunit>=1)curpos = int(codepos)+codelen - codeunit;
+      else curpos = int(codepos)+codelen - 1;
+    }
+
+    if(codeunit>=1){tft.fillRect(155, int(curpos), 4, codeunit, HACO3_C8);}//コードの位置と範囲を表示
+    else{tft.fillRect(155, int(curpos), 4, 1, HACO3_C8);}//１ピクセル未満の時は見えなくなるので１に
     
-    //  //最終出力
-    // tft.setPivot(0, 0);
-    // tft.pushRotateZoom(&M5Cardputer.Display, 30, 0, 0, 1, 1);
+     //最終出力
+    tft.setPivot(0, 0);
+    tft.pushRotateZoom(&M5Cardputer.Display, 40, 3, 0, 1, 1);
     
-    // if(pressedBtnID == 0)//ESC
-    // {
-    //   editor.setCursorConfig(0,0,0);//カーソルの位置を保存
-    //   delay(50);
-    //   restart("/init/main.lua", 0);
-    // }
+    if(pressedBtnID == 0)//(|)メニュー画面へ
+    {
+      editor.setCursorConfig(0,0,0);//カーソルの位置を保存
+      delay(50);
+      restart("/init/main.lua", TFT_RUN_MODE);
+    }
 
-    // if(pressedBtnID == 6){//PAGEDOWN
-    //   editor.editorSave(SPIFFS);//SPIFFSに保存
-    //   delay(100);//ちょっと待つ
-    //   reboot(appfileName, TFT_RUN_MODE);//現状rebootしないと初期化が完全にできない
-    //   // restart(appfileName, 0);//初期化がうまくできない（スプライトなど）
-    //   // broadchat();//ファイルの中身をブロードキャスト送信する（ファイルは消えない）
-    // }
+    if(pressedBtnID == 9){//(|)
+    // appfileName = 
+      editor.editorSave(SPIFFS);//SPIFFSに保存
+      delay(100);//ちょっと待つ
+      reboot(appfileName, TFT_RUN_MODE);//現状rebootしないと初期化が完全にできない
+      // restart(appfileName, 0);//初期化がうまくできない（スプライトなど）
+      // broadchat();//ファイルの中身をブロードキャスト送信する（ファイルは消えない）
+    }
 
   }
 
@@ -1473,63 +1532,3 @@ void loop()
   delay(1);
   
 }
-
-
-// #include "M5Cardputer.h"
-// #include "M5GFX.h"
-
-// M5Canvas canvas(&M5Cardputer.Display);
-// String data = "> ";
-
-// void setup() {
-//     auto cfg = M5.config();
-//     M5Cardputer.begin(cfg, true);
-//     M5Cardputer.Display.setRotation(1);
-//     M5Cardputer.Display.setTextSize(0.5);
-//     M5Cardputer.Display.drawRect(0, 0, M5Cardputer.Display.width(),
-//                                  M5Cardputer.Display.height() - 28, GREEN);
-//     M5Cardputer.Display.setTextFont(&fonts::FreeSerifBoldItalic18pt7b);
-
-//     M5Cardputer.Display.fillRect(0, M5Cardputer.Display.height() - 4,
-//                                  M5Cardputer.Display.width(), 4, GREEN);
-
-//     canvas.setTextFont(&fonts::FreeSerifBoldItalic18pt7b);
-//     canvas.setTextSize(0.5);
-//     canvas.createSprite(M5Cardputer.Display.width() - 8,
-//                         M5Cardputer.Display.height() - 36);
-//     canvas.setTextScroll(true);
-//     canvas.println("Press Key and Enter to Input Text");
-//     canvas.pushSprite(4, 4);
-//     M5Cardputer.Display.drawString(data, 4, M5Cardputer.Display.height() - 24);
-// }
-
-// void loop() {
-//     M5Cardputer.update();
-//     if (M5Cardputer.Keyboard.isChange()) {
-//         if (M5Cardputer.Keyboard.isPressed()) {
-//             Keyboard_Class::KeysState status = M5Cardputer.Keyboard.keysState();
-
-//             for (auto i : status.word) {
-//                 data += i;
-//             }
-
-//             if (status.del) {
-//                 data.remove(data.length() - 1);
-//             }
-
-//             if (status.enter) {
-//                 data.remove(0, 2);
-//                 canvas.println(data);
-//                 canvas.pushSprite(4, 4);
-//                 data = "> ";
-//             }
-
-//             M5Cardputer.Display.fillRect(0, M5Cardputer.Display.height() - 28,
-//                                          M5Cardputer.Display.width(), 25,
-//                                          BLACK);
-
-//             M5Cardputer.Display.drawString(data, 4,
-//                                            M5Cardputer.Display.height() - 24);
-//         }
-//     }
-// }

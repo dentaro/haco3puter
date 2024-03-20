@@ -2131,12 +2131,12 @@ int runLuaGame::l_appmode(lua_State* L){//ファイル名を取得して、そ�
   // appfileName = file;//開くファイルを更新しておく
 
   if(modeno==2){
-    // setOpenConfig(file,2);
-    // delay(100); 
-    // reboot(file, modeno);
+    setOpenConfig(file,2);
+    delay(100); 
+    reboot(file, modeno);
   }
   else {
-    // restart(file, modeno);
+    restart(file, modeno);
   }
   
   return 0;
