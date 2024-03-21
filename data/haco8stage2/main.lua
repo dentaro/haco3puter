@@ -1,4 +1,4 @@
-cl = 0
+cl = 4
 function get_map_sprn(sprx,spry)
   local celx=flr(sprx/8)
   local cely=flr(spry/8)
@@ -19,8 +19,8 @@ function collition(x,y)
   return get_map_flag(x-cl,y+2-cl) or get_map_flag(x+6-cl,y+2-cl) or get_map_flag(x-cl,y+7-cl) or get_map_flag(x+6-cl,y+7-cl)
 end
 
-x=8
-y=8
+x=12
+y=12
 lefttop=0
 righttop=0
 leftbottom=0
