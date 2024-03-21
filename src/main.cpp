@@ -1250,11 +1250,11 @@ void setup()
   //   if (keychar == PS2_ESC) {
   //     safeReboot();
   //   }
-  // }
-
-  
-  
+  // }  
 }
+
+bool btnpF = false;
+int btnptick = 0;
 
 void loop()
 {
@@ -1266,11 +1266,41 @@ void loop()
       if(pressedBtnID != -1){buttonState[pressedBtnID] = -1;}
         pressedBtnID = -1;//リセット   
   }
-  
-  
+
+  // btnpF = false;
+  // if(btnptick <= 15){
+  //   if(btnptick == 0){btnpF = true;}//最初の0だけtrue
+  //   else{btnpF = false;}
+  // }else{
+  //   if(btnptick%4 == 0){
+  //     // Serial.println("定期的にtrue");
+  //     btnpF = true;
+  //   }else{
+  //     btnpF = false;
+  //   }
+  // }
+
   if (M5Cardputer.Keyboard.isChange()) {
+    btnptick = 0;
+  }
+
+  if (M5Cardputer.Keyboard.isPressed()) {
+    //ボタンが押されているときだけtickがカウントされる
+    if(btnptick <= 15){
+      if(btnptick==0){btnpF = true;}//最初の0だけtrue
+      else{btnpF = false;}
+    }else{
+      if(btnptick%4 == 0){
+        // Serial.println("定期的にtrue");
+        btnpF = true;
+      }else{
+        btnpF = false;
+      }
+    }
+    btnptick++;
     
-    if (M5Cardputer.Keyboard.isPressed()) {
+    if (btnpF) {
+    
       Keyboard_Class::KeysState status = M5Cardputer.Keyboard.keysState();//キー状態を取得しておく
 
         if (status.fn) {
@@ -1289,8 +1319,6 @@ void loop()
         for (auto i : status.word) {
           Point2D_t keyPos;
           keyPos = M5Cardputer.Keyboard.keyList().at(0);//直前に押されたキーのxy要素を取り出す
-          
-          // keychar = M5Cardputer.Keyboard.getKeyValue(keyPos).value_first;
 
           if(!shiftF){
             keychar = M5Cardputer.Keyboard.getKeyValue(keyPos).value_first;//対応する文字コードを格納
@@ -1317,16 +1345,12 @@ void loop()
       } else if (M5Cardputer.Keyboard.isKeyPressed('.')) {
         pressedBtnID = 4;
       }else if (M5Cardputer.Keyboard.isKeyPressed('<')) {
-        // keychar = PS2_LEFTARROW;editor.editorProcessKeypress(keychar,SPIFFS);
         pressedBtnID = 7;
       } else if (M5Cardputer.Keyboard.isKeyPressed('?')) {
-        // keychar = PS2_RIGHTARROW;editor.editorProcessKeypress(keychar,SPIFFS);
         pressedBtnID = 8;
       } else if (M5Cardputer.Keyboard.isKeyPressed(':')) {
-        // keychar = PS2_UPARROW;editor.editorProcessKeypress(keychar,SPIFFS);
         pressedBtnID = 5;
       } else if (M5Cardputer.Keyboard.isKeyPressed('>')) {
-        // keychar = PS2_DOWNARROW;editor.editorProcessKeypress(keychar,SPIFFS);
         pressedBtnID = 6;
       } else if (M5Cardputer.Keyboard.isKeyPressed('|')) {
         pressedBtnID = 9;
@@ -1335,9 +1359,7 @@ void loop()
         //通常の文字
         if(keychar != -1){
           editor.editorProcessKeypress(keychar, SPIFFS);
-          // Serial.println(keychar);
           }
-          // Serial.println(keychar);
         }
 
       }else if (isEditMode == TFT_EDIT_MODE) {
