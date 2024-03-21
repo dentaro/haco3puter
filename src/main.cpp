@@ -30,7 +30,7 @@
 #include "M5Cardputer.h"
 
 uint8_t toolNo = 0;
-bool textMoveF = true;
+bool textMoveF = true;//デフォルトムーブモードにしてます。
 bool shiftF = false;
 
 float effectVal;
@@ -1375,7 +1375,9 @@ void loop()
             keychar = PS2_UPARROW;editor.editorMoveCursor(keychar);
           } else if (M5Cardputer.Keyboard.isKeyPressed('.')) {
             keychar = PS2_DOWNARROW;editor.editorMoveCursor(keychar);
-          } else if (M5Cardputer.Keyboard.isKeyPressed('`')) {
+          } else if (M5Cardputer.Keyboard.isKeyPressed('|')) {
+            pressedBtnID = 9;
+          }else if (M5Cardputer.Keyboard.isKeyPressed('`')) {
             pressedBtnID = 0;
           } 
         }else{
