@@ -30,7 +30,7 @@
 #include "M5Cardputer.h"
 
 uint8_t toolNo = 0;
-bool textMoveF = false;
+bool textMoveF = true;
 bool shiftF = false;
 
 float effectVal;
