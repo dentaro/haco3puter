@@ -76,10 +76,10 @@ end
 
 function input()
 
-    if btn(6) >= 2 then--3
-    appmode(appinfo(0), 1)--エディットモードで開く
-    -- appmode("/2048/main.lua", 1)--エディットモードで開く
-    end
+    -- if btnp(9) then
+    -- appmode(appinfo(0), 1)--エディットモードで開く
+    -- -- appmode("/2048/main.lua", 1)--エディットモードで開く
+    -- end
       
     if mode == M_IDLE then
         for i = 1, 4 do

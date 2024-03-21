@@ -14,10 +14,10 @@ function input()
   -- x = tp(0)
   -- y = tp(1)
 
-  if btn(5) >= 1 then
-    -- appmode(appinfo(0), 1)--エディットモードで開く
-    appmode("/00sample/main.lua", 1)--エディットモードで開く
-  end
+  -- if btnp(9) then
+  --   -- appmode(appinfo(0), 1)--エディットモードで開く
+  --   appmode("/00sample/main.lua", 1)--エディットモードで開く
+  -- end
 
   if btn(1) >= 1 then x = x-3 end
   if btn(2) >= 1 then x = x+3 end
