@@ -62,25 +62,25 @@ function input()
   local prey = y
   local pressed=false
 
-  if (btn(1)>=2) then
+  if btnp(1) then
     sprno=(sprno-1)
     if sprno <0 then
       sprno=sprno+128
     end
   end
-  if (btn(2)>=2) then
+  if btnp(2) then
     sprno=(sprno+1)
     if sprno >128 then
       sprno=sprno-128
     end
   end
-  if (btn(3)>=2) then
+  if btnp(3) then
     sprno=sprno-8
     if sprno <0 then
       sprno=sprno+128
     end
   end
-  if (btn(4)>=2) then
+  if btnp(4) then
     sprno=sprno+8
     if sprno <0 then
       sprno=sprno+128
@@ -124,11 +124,11 @@ function _update()
 end
 
 function _draw()
-
   fillrect(128+3,112,16,16,cno)
   drawrect(128+3,112,16,16,8)
 
   if wx~=presprno or wy~=presprno then
+    cls(0)
     drawrect(0,0,128,128,0)
     spr8(sprno%128,unit*2+40,0+72, 16,16)--キャラ拡大プレビュー
     drawrect(0,0,128,128,8)
