@@ -687,8 +687,8 @@ int runLuaGame::l_spr8(lua_State* L){
     }
   }
 
-  // sprite88_roi.setPivot(w/2.0, h/2.0);
-  sprite88_roi.setPivot(0, 0);
+  sprite88_roi.setPivot(w/2.0, h/2.0);
+  // sprite88_roi.setPivot(0, 0);
   if(scalex == NULL && scaley==NULL && angle == NULL){
     sprite88_roi.pushRotateZoom(&tft, x, y, 0, 1, 1, gethaco3Col(tc));
   }else  if(scalex != NULL && scaley!=NULL && angle == NULL){
