@@ -2941,7 +2941,7 @@ luaL_openlibs(L);
 
   lua_pushlightuserdata(L, this);
   lua_pushcclosure(L, l_gstat, 1);
-  lua_setglobal(L, "l_gstat");
+  lua_setglobal(L, "gstat");
   
   lua_pushlightuserdata(L, this);
   lua_pushcclosure(L, l_rnd, 1);
