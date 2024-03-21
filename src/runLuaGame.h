@@ -163,6 +163,7 @@ struct CameraObj {
     static int l_pinw(lua_State* L);
     static int l_pinr(lua_State* L);
     static int l_tone(lua_State* L);
+    static int l_tool(lua_State* L);
     static int l_spr8(lua_State* L);
     static int l_spr(lua_State* L);
     static int l_scroll(lua_State* L);

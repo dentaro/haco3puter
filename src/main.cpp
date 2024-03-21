@@ -29,6 +29,7 @@
 #include <map>
 #include "M5Cardputer.h"
 
+uint8_t toolNo = 0;
 bool textMoveF = false;
 bool shiftF = false;
 
@@ -1211,6 +1212,9 @@ void setup()
   spriteMap.setColorDepth(16);//子スプライトの色深度
   spriteMap.createSprite(MAPW, MAPH/divnum);//マップ展開用スプライトメモリ確保
 
+  //gameオブジェクトが立ち上がる前にinitの準備しないとフォントが変わる
+  editor.initEditor(tft);
+
   // if(firstBootF == true)
   // {
   // appfileName = "/min/main.lua";
@@ -1225,11 +1229,13 @@ void setup()
 
   frame=0;
 
-
-  editor.initEditor(tft);
   editor.readFile(SPIFFS, appfileName.c_str());
   editor.editorOpen(SPIFFS, appfileName.c_str());
   editor.editorSetStatusMessage("Press ESCAPE to save file");
+
+
+
+  
 
   savedAppfileName = appfileName;//起動したゲームのパスを取得しておく
   firstBootF = false;
@@ -1488,6 +1494,18 @@ void loop()
       // tft.drawPngFile(SPIFFS, enemyPath, enemyX, enemyY);//直接展開する
     }
 
+      if(toolNo != 0){
+        if(toolNo==1){//カラーパレット
+          for(int j = 0; j<8; j++){
+            for(int i = 0; i<2; i++){
+              M5Cardputer.Display.fillRect(i*16,j*16,16,16,gethaco3Col(j*2+i));
+            }
+          }
+        }
+
+        toolNo = 0;
+      }
+
      //最終出力
     tft.setPivot(0, 0);
     tft.pushRotateZoom(&M5Cardputer.Display, 40, 3, 0, 1, 1);
@@ -1498,6 +1516,7 @@ void loop()
   }
   else if(isEditMode == TFT_EDIT_MODE)
   {
+    
     editor.editorRefreshScreen(tft);
 
     float codeunit = 128.0/float(editor.getNumRows());

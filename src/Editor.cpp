@@ -663,6 +663,7 @@ void Editor::editorDrawMessageBar(M5Canvas& tft, struct abuf *ab) {
 // }
 
 void Editor::editorRefreshScreen(M5Canvas& tft) {
+  
     struct abuf ab = ABUF_INIT;
     
     tft.fillScreen(HACO3_C0);

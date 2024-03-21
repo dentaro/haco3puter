@@ -31,6 +31,8 @@ extern int HACO3_C14;
 extern int HACO3_C15;
 extern MyTFT_eSprite tft;
 
+extern uint8_t toolNo;
+
 extern uint8_t clist2[16][3];
 
 // extern M5Canvas sprite64;
@@ -553,6 +555,12 @@ int runLuaGame::l_pinr(lua_State* L){
   return 0;
 }
 
+int runLuaGame::l_tool(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  int no = lua_tointeger(L, 1);
+  toolNo = no;
+  return 0; 
+}
 
 int runLuaGame::l_spr8(lua_State* L){
   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
@@ -2874,6 +2882,11 @@ luaL_openlibs(L);
   lua_pushlightuserdata(L, this);
   lua_pushcclosure(L, l_tone, 1);
   lua_setglobal(L, "tone");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_tool, 1);
+  lua_setglobal(L, "tool");
+
 
   lua_pushlightuserdata(L, this);
   lua_pushcclosure(L, l_spr8, 1);
