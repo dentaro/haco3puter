@@ -10,6 +10,8 @@
 #define FAST_MODE 1
 #define WIDE_MODE 2 //倍率になっています。
 
+#define BSTARBUFNUM 1000
+
 #define TFT_OFFSET_X 60
 #define TFT_OFFSET_Y 0
 #define RAD_ONE PI/180

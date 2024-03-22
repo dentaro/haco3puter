@@ -81,6 +81,8 @@ extern std::deque<int> buttonState;//ボタンの個数未定
 extern void restart(String _fileName, int _isEditMode);
 extern int getcno2tftc(uint8_t _cno);
 
+extern void broadchat(String _text);
+
 extern char keychar;
 // extern Editor editor;
 
@@ -98,6 +100,9 @@ extern int gameState;
 // extern void getOpenConfig(String _wrfile);
 extern uint16_t gethaco3Col(uint8_t haco3ColNo);
 
+extern std::vector<std::array<float, 2>> bsParamFloat;
+extern std::vector<std::array<uint8_t, 1>> bsParamInt8t;
+extern std::vector<std::array<uint16_t, 1>> bsParamInt16t;
 
   struct Obj {
     float x;
@@ -132,19 +137,11 @@ extern uint16_t gethaco3Col(uint8_t haco3ColNo);
     std::vector<Obj> objects;
     int objno = 0;
 
-
-
-int BSTARBUFNUM = 1000;
-// extern std::vector<std::vector<float>> bsParamFloat;
-// extern std::vector<std::vector<uint8_t>> bsParamInt8t;
-// extern std::vector<std::vector<uint16_t>> bsParamInt16t;
-// std::vector<std::vector<float>> bsParamFloat;
-// std::vector<std::vector<uint8_t>> bsParamInt8t;
-// std::vector<std::vector<uint16_t>> bsParamInt16t;
-
-float bsParamFloat[1000][2];
-uint8_t bsParamInt8t[1000][1];
-uint16_t bsParamInt16t[1000][1];
+// float bsParamFloat[BSTARBUFNUM][2];
+// uint8_t bsParamInt8t[BSTARBUFNUM][1];
+// uint16_t bsParamInt16t[BSTARBUFNUM][1];
+// 空のベクターを生成
+    
 
 int cursor = 0;
 
@@ -2143,6 +2140,13 @@ int runLuaGame::l_key(lua_State* L){
   return 1;
 }
 
+int runLuaGame::l_bchat(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  String text = lua_tostring(L, 1);
+  // broadchat(text);
+  return 0;
+}
+
 int runLuaGame::l_btn(lua_State* L){
   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
   int n = lua_tointeger(L, 1);
@@ -2377,9 +2381,10 @@ int runLuaGame::l_initstars(lua_State* L)
   int zoom = lua_tointeger(L, 7);
 
   // 1000個の要素を事前に確保する
-  // bsParamFloat.resize(BSTARBUFNUM, std::vector<float>(2));
-  // bsParamInt8t.resize(BSTARBUFNUM, std::vector<uint8_t>(1));
-  // bsParamInt16t.resize(BSTARBUFNUM, std::vector<uint16_t>(1));
+  // BSTARBUFNUM個の要素を追加
+    bsParamFloat.resize(BSTARBUFNUM);
+    bsParamInt8t.resize(BSTARBUFNUM);
+    bsParamInt16t.resize(BSTARBUFNUM);
 
   // 赤経の中心と幅を指定
   float centerRightAscension = hmsToRadian( _asc_h, _asc_m, _asc_s ); // 中心の赤経（時分秒をラジアンに変換する関数）
@@ -3127,6 +3132,10 @@ luaL_openlibs(L);
   lua_pushlightuserdata(L, this);
   lua_pushcclosure(L, l_key, 1);
   lua_setglobal(L, "key");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_bchat, 1);
+  lua_setglobal(L, "bchat");
 
   lua_pushlightuserdata(L, this);
   lua_pushcclosure(L, l_btn, 1);

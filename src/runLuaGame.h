@@ -198,6 +198,8 @@ struct CameraObj {
     static int l_filltri(lua_State* L);
     static int l_pal(lua_State* L);
     static int l_key(lua_State* L);
+
+    static int l_bchat(lua_State* L);
     static int l_btn(lua_State* L);
     static int l_touch(lua_State* L);
     static int l_btnp(lua_State* L);

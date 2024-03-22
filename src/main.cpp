@@ -29,8 +29,7 @@
 #include <map>
 #include "M5Cardputer.h"
 
-uint8_t toolNo = 0;
-bool textMoveF = true;//デフォルトムーブモードにしてます。
+bool textMoveF = false;
 bool shiftF = false;
 
 float effectVal;
@@ -65,9 +64,22 @@ static int menu_padding = 36;
 // #define TFT_WIFI_MODE 2
 
 int gameState = 0;
-
+uint8_t toolNo = 0;
 
 String data = "> ";
+
+//星のデータ用
+std::vector<std::array<float, 2>> bsParamFloat;
+std::vector<std::array<uint8_t, 1>> bsParamInt8t;
+std::vector<std::array<uint16_t, 1>> bsParamInt16t;
+//スプライト用PNGの一時確保用
+// const int G_IMGBUF88_0_SIZE = 32;
+// const int G_IMGBUF64_SIZE = 8192;
+// const int G_IMGBUF2_SIZE = 32768;
+// std::vector<uint8_t> gIMGBuf88_0(G_IMGBUF88_0_SIZE);
+// std::vector<uint8_t> gIMGBuf64(G_IMGBUF64_SIZE);
+// std::vector<uint8_t> gIMGBuf2(G_IMGBUF2_SIZE);
+
 
 // Every call to read() returns a single byte for each
 // keystroke.  These configure what byte will be returned
@@ -326,7 +338,6 @@ const uint8_t RGBValues[][3] PROGMEM = {//16bit用
 
 M5GFX_DentaroUI ui(&M5Cardputer.Display);
 M5Canvas tft(&M5Cardputer.Display);
-// M5Canvas scaler(&M5Cardputer.Display);
 
 // #include "MapDictionary.h"
 // MapDictionary& dict = MapDictionary::getInstance();
@@ -355,12 +366,18 @@ uint8_t mapsx = 0;
 uint8_t mapsy = 0;
 String mapFileName = "/init/map/0.png";
 int readmapno = 0;
-int divnum = 1;
+int divnum = 8;
 bool readMapF = false;
 //divnumが大きいほど少ない領域で展開できる(2の乗数)
+
+// uint8_t gIMGBuf88_0[32];
+// uint8_t gIMGBuf64[8192];
+// uint8_t gIMGBuf64[4096];
+// uint8_t gIMGBuf2[32768];
+// uint8_t gIMGBuf2[4096]; //32768/4096=8スコープを抜けると自動で開放再利用できる
+
 // M5Canvas spritebg[16];//16種類のスプライトを背景で使えるようにする
 M5Canvas spriteMap;//地図用スプライト
-
 // uint8_t mapArray[MAPWH][MAPWH];
 // uint8_t mapArray[MAPH][MAPW];
 uint8_t mapArray[16][20];
@@ -404,16 +421,14 @@ int ytileNo = 12909;
 M5Canvas sprref;
 String oldKeys[BUF_PNG_NUM];
 
-uint8_t gIMGBuf88_0[32];
-uint8_t gIMGBuf64[8192];
-uint8_t gIMGBuf2[32768];
+
 
 /** 画像をSPIFFSから読み込む */
-void readIMG() {
-  auto file = SPIFFS.open("/init/initspr.png", "r");
-  file.read(gIMGBuf64, 8192);
-  file.close();
-}
+// void readIMG() {
+//   auto file = SPIFFS.open("/init/initspr.png", "r");
+//   file.read(gIMGBuf64, 8192);
+//   file.close();
+// }
 
 int vol_value; //analog値を代入する変数を定義
 int statebtn_value; //analog値を代入する変数を定義
@@ -819,19 +834,29 @@ void setOpenConfig(String fileName, uint8_t _isEditMode) {
   fw.close(); // ファイルを閉じる
 }
 
+
+
 int readMap()
 {
   mapready = false;
 
   for(int n = 0; n<divnum; n++)
   {
-    // spriteMap.drawPngFile( SPIFFS, mapFileName, 0, (int32_t)(-MAPWH*n/divnum) );
+    uint8_t* gIMGBuf2 = new uint8_t[4096];
 
-  auto file = SPIFFS.open(mapFileName.c_str(), "r");
-  file.read(gIMGBuf2, 32768);
-  file.close();
+    auto file = SPIFFS.open(mapFileName.c_str(), "r");
+    file.read(gIMGBuf2, 32768/divnum);
+    file.close();
 
-  spriteMap.drawPng(gIMGBuf2,32768, 0, (int32_t)(-MAPWH*n/divnum));
+    spriteMap.drawPng(gIMGBuf2, 32768/divnum, 0, (int32_t)(-MAPWH * n / divnum));
+
+    delete[] gIMGBuf2;
+
+  // auto file = SPIFFS.open(mapFileName.c_str(), "r");
+  // file.read(gIMGBuf2, 32768);
+  // file.close();
+
+  // spriteMap.drawPng(gIMGBuf2,32768, 0, (int32_t)(-MAPWH*n/divnum));
     
     for(int32_t j = 0; j<MAPWH/divnum; j++){
       for(int32_t i = 0; i<MAPWH; i++){
@@ -1152,7 +1177,7 @@ void setup()
     }
   }
   
-  readIMG();
+  
 
   getOpenConfig();//最初に立ち上げるゲームのパスとモードをSPIFFSのファイルopenconfig.txtから読み込む
 
@@ -1174,15 +1199,49 @@ void setup()
   // file.read(gIMGBuf88_0, 32);
   // file.close();
 
+  uint8_t* gIMGBuf88_0 = new uint8_t[32];
   sprite88_0.drawPng(gIMGBuf88_0, 32,0,0);
+  delete[] gIMGBuf88_0;
 
   sprite64.setPsram(false );
   sprite64.setColorDepth(16);//子スプライトの色深度
   sprite64.createSprite(PNG_SPRITE_WIDTH, PNG_SPRITE_HEIGHT);//ゲーム画面用スプライトメモリ確保//wroomだと64*128だとメモリオーバーしちゃう問題を色番号配列にして回避した
 
-  // sprite64.drawPngFile(SPIFFS, "/init/initspr.png", 0, 0);//一時展開する
-  // sprite64.drawBmpFile(SPIFFS, "/init/initspr.bmp", 0, 0);//一時展開する
+// const int fileSize = 8192; // ファイルのサイズ（適切な値に修正してください）
+// divnum = 4; // 分割する数（適切な値に修正してください）
+// const int chunkSize = fileSize / divnum; // 分割するデータのサイズ
+
+// auto file = SPIFFS.open("/init/initspr.png", "r");
+
+
+//     for (int n = 0; n < divnum; n++) {
+
+//         file.read(gIMGBuf64, chunkSize);
+//         sprite64.drawPng(gIMGBuf64, chunkSize, 0, (PNG_SPRITE_HEIGHT/divnum)*n );
+//     }
+
+//     file.close();
+  // uint8_t gIMGBuf64[4096];
+  // auto file = SPIFFS.open("/init/initspr.png", "r");
+  // file.read(gIMGBuf64, 4096);
+  // sprite64.drawPng(gIMGBuf64, 4096,0,0);
+
+  // file.close();
+  // file = SPIFFS.open("/init/initspr.png", "r");
+  // file.seek(4096);
+  // file.read(gIMGBuf64, 4096);
+  // sprite64.drawPng(gIMGBuf64, 4096,0, 64*8);
+
+  // file.close();
+
+  uint8_t* gIMGBuf64 = new uint8_t[8192];
+
+  auto file = SPIFFS.open("/init/initspr.png", "r");
+  file.read(gIMGBuf64, 8192);
   sprite64.drawPng(gIMGBuf64, 8192,0,0);
+  file.close();
+
+  delete[] gIMGBuf64;
 
   sprite64cnos_vector.clear();//初期化処理
 
@@ -1196,7 +1255,7 @@ void setup()
   }
 
   //破棄
-  // sprite64.deleteSprite();
+  sprite64.deleteSprite();
 
   //psram使えない-------------------------------------------
 
@@ -1212,16 +1271,15 @@ void setup()
   spriteMap.setColorDepth(16);//子スプライトの色深度
   spriteMap.createSprite(MAPW, MAPH/divnum);//マップ展開用スプライトメモリ確保
 
-  //gameオブジェクトが立ち上がる前にinitの準備しないとフォントが変わる
-  editor.initEditor(tft);
-
   // if(firstBootF == true)
   // {
+  // createAbsUI();
   // appfileName = "/min/main.lua";
   // isEditMode = 0;
   // mapFileName = "/init/map/0.png";
-  readMap();
-  delay(50);
+  // readMap();
+  // delay(50);
+    
   game = nextGameObject(&appfileName, gameState, mapFileName);//ホームゲームを立ち上げる（オブジェクト生成している）
   game->init();//（オブジェクト生成している）
   // tunes.init();//（オブジェクト生成している）
@@ -1229,13 +1287,11 @@ void setup()
 
   frame=0;
 
+
+  editor.initEditor(tft);
   editor.readFile(SPIFFS, appfileName.c_str());
   editor.editorOpen(SPIFFS, appfileName.c_str());
   editor.editorSetStatusMessage("Press ESCAPE to save file");
-
-
-
-  
 
   savedAppfileName = appfileName;//起動したゲームのパスを取得しておく
   firstBootF = false;
@@ -1250,7 +1306,10 @@ void setup()
   //   if (keychar == PS2_ESC) {
   //     safeReboot();
   //   }
-  // }  
+  // }
+
+  
+  
 }
 
 bool btnpF = false;
@@ -1478,6 +1537,10 @@ void loop()
       musicflag = false;
 
       mode = 1;//exit
+      // 星用のベクター配列使用後は要素数を0にする
+      bsParamFloat.resize(0);
+      bsParamInt8t.resize(0);
+      bsParamInt16t.resize(0);
     }
 
     if (pressedBtnID == 9999)
@@ -1598,8 +1661,6 @@ void loop()
   // uint16_t c = rand();
   // M5Cardputer.Display.fillCircle(x, y, r, c);
   // draw_function(&M5Cardputer.Display);
-
- 
 
   frame++;
   if(frame > 18446744073709551615)frame = 0;
