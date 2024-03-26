@@ -31,6 +31,9 @@ extern int HACO3_C14;
 extern int HACO3_C15;
 extern MyTFT_eSprite tft;
 
+
+extern uint8_t masterVol;
+
 extern uint8_t toolNo;
 
 extern uint8_t clist2[16][3];
@@ -40,6 +43,8 @@ extern uint8_t clist2[16][3];
 
 extern uint8_t sprno;
 extern uint8_t repeatnum;
+
+extern int8_t soundState;
 
 // extern std::vector<uint8_t> rowData;
 std::vector<std::vector<uint8_t>> rowData(16);
@@ -340,6 +345,15 @@ int runLuaGame::l_fset(lua_State* L){
   int8_t bitfilter = 0b00000001<<fbitno;
        if(val == 0)sprbits[sprno] &= ~bitfilter;//スプライト番号sprnoのfbitno番目を0に
   else if(val == 1)sprbits[sprno] |=  bitfilter;//スプライト番号sprnoのfbitno番目を1に
+  return 0;
+}
+
+
+int runLuaGame::l_snd(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  int soundNo = lua_tointeger(L, 1);//今のところ使ってない
+  masterVol = lua_tointeger(L, 2);
+
   return 0;
 }
 
@@ -2316,6 +2330,10 @@ int runLuaGame::l_appmode(lua_State* L){//ファイル名を取得して、そ�
     setOpenConfig(file,2);
     delay(100); 
     reboot(file, modeno);
+  }else if(modeno==3){
+    setOpenConfig(file,3);
+    delay(100); 
+    reboot(file, modeno);
   }
   else {
     restart(file, modeno);
@@ -2950,6 +2968,10 @@ luaL_openlibs(L);
   lua_setglobal(L, "fset");
 
   lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_snd, 1);
+  lua_setglobal(L, "snd");
+
+  lua_pushlightuserdata(L, this);
   lua_pushcclosure(L, l_sfx, 1);
   lua_setglobal(L, "sfx");
 
@@ -3218,6 +3240,7 @@ luaL_openlibs(L);
   // lua_pushcclosure(L, l_savebmp, 1);
   // lua_setglobal(L, "savebmp");
 
+  masterVol = 0;//起動時すぐには音が鳴らないようにする
 
   objects.clear();//オブジェクトを一度滑れ破棄してリセット
 
@@ -3306,6 +3329,8 @@ if (!runError) {
         errorString = lua_tostring(L, -1);
     }
 }
+
+
 
 }
 

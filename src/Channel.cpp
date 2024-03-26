@@ -3,6 +3,7 @@
 // Channel クラスのコンストラクタの実装
 Channel::Channel() {
     // ここで初期化処理を行う
+    setupHz();
 }
 
 // Channel クラスのデストラクタの実装
@@ -12,80 +13,108 @@ Channel::~Channel() {
 
 // void Channel::test();
 
-extern int tick;
-// extern size_t gEfectNo;
+extern uint8_t tick;
+extern uint8_t tickTime;
+// extern uint8_t gEfectNo;
 
 // void Channel::setChannel(const ChannelData newData[32])
 // {
 //     // 配列をコピーしてメンバ変数にセット
-//     for (size_t i = 0; i < 32; ++i) {
+//     for (uint8_t i = 0; i < 32; ++i) {
 //         this->notedata[i] = newData[i];
 //     }
 // }
 
-double calculateFrequency(int pitch, int octave) {
+float calculateFrequency(int pitch, int octave) {
     // A4の周波数（Hz）
-    double baseFrequency = 440.0;
+    float baseFrequency = 440.0;
 
-    switch (pitch){//ペンタトニックスケールにする
-        case 0:pitch = 0;octave = 4;break;
-        case 1:pitch = 2;octave = 4;break;
-        case 2:pitch = 4;octave = 4;break;
-        case 3:pitch = 7;octave = 4;break;
-        case 4:pitch = 9;octave = 4;break;
-        case 5:pitch =11;octave = 4;break;
-        case 6:pitch = 0;octave = 5;break;
-        case 7:pitch = 2;octave = 5;break;
-        case 8:pitch = 4;octave = 5;break;
-        case 9:pitch = 7;octave = 5;break;
-        case 10:pitch= 9;octave = 5;break;
-        case 11:pitch=11;octave = 5;break;
-        // default:pitch= 0;octave = 5;break;
+    // 全音階に対応するピッチの変換
+    switch (pitch) {
+        case 0: pitch = 0; break;  // ファ
+        case 1: pitch = 1; break;  // ファ# / ソ♭
+        case 2: pitch = 2; break;  // ソ
+        case 3: pitch = 3; break;  // ソ# / ラ♭
+        case 4: pitch = 4; break;  // ラ
+        case 5: pitch = 5; break;  // ラ# / シ♭
+        case 6: pitch = 6; break;  // シ
+        case 7: pitch = 7; break;  // ド
+        case 8: pitch = 8; break;  // ド# / レ♭
+        case 9: pitch = 9; break;  // レ
+        case 10: pitch = 10; break; // レ# / ミ♭
+        case 11: pitch = 11; break; // ミ
+        // default: pitch = 0; break; // デフォルトは全音階に含まれないピッチ
     }
 
+    // オクターブの増加に応じて周波数を調整
+    float octaveFactor = pow(2.0, octave - 4);
+
     // ドレミの差に基づいて周波数を計算
-    double frequency = baseFrequency * pow(2.0, (pitch / 12.0 + octave - 4));
-    // double frequency = baseFrequency * pow(2.0, (pitch / 12.0 + octave - 5));
-
-//     double frequency;
-// if (octave == 4) {
-//     frequency = baseFrequency * pow(2.0, ((pitch + 12 * (octave - 4)) / 12.0));
-// } else if (octave == 5) {
-//     frequency = baseFrequency * pow(2.0, ((pitch + 12 * (octave - 5)) / 12.0));
-// }
-
+    float frequency = baseFrequency * octaveFactor * pow(2.0, (pitch-4) / 12.0);
     return frequency;
 }
 
-extern int tickTime;
-void Channel::setTones( size_t onoffF, 
-size_t loopStart, size_t loopEnd, size_t instrument, size_t pitch, size_t octave, size_t sfxno, size_t volume, size_t effectNo, size_t tickNo, 
-size_t _chno, size_t _buffAreaNo)
-{
-    // instrument = pitch;//移しておく
+float calculateFrequency_p(int pitch, int octave) {
+    // A4の周波数（Hz）
+    float baseFrequency = 440.0;
 
-    for (int pitch = 0; pitch < numPitches; ++pitch) {
-        for (int octave = 0; octave < numOctaves; ++octave) {
-            hzList[pitch][octave] = calculateFrequency(pitch, octave);
-        }
+    // ペンタトニックスケールに対応するピッチの変換
+    switch (pitch) {
+        case 0: pitch = 0; break;  // ド
+        case 1: pitch = 2; break;  // レ
+        case 2: pitch = 4; break;  // ミ
+        case 3: pitch = 7; break;  // ソ
+        case 4: pitch = 9; break;  // ラ
+        case 5: pitch = 0; octave++; break; // 次のオクターブのド
+        case 6: pitch = 2; octave++; break; // 次のオクターブのレ
+        case 7: pitch = 4; octave++; break; // 次のオクターブのミ
+        case 8: pitch = 7; octave++; break; // 次のオクターブのソ
+        case 9: pitch = 9; octave++; break; // 次のオクターブのラ
+        case 10: pitch = 0; octave += 2; break; // 2オクターブ進むド
+        case 11: pitch = 2; octave += 2; break; // 2オクターブ進むレ
+        // default: pitch = 0; octave = 4; break; // デフォルトはペンタトニックスケールに含まれないピッチ
     }
-    // メンバ変数の初期化
-    // for (int _chno = 0; _chno < 8; ++_chno) {//同じものを４つ作る
-        this->notedata[_chno][tickNo+_buffAreaNo*32].onoffF = onoffF;
-        this->notedata[_chno][tickNo+_buffAreaNo*32].loopStart = loopStart;
-        this->notedata[_chno][tickNo+_buffAreaNo*32].loopEnd = loopEnd;
-        this->notedata[_chno][tickNo+_buffAreaNo*32].hz = hzList[pitch][octave];
-        this->notedata[_chno][tickNo+_buffAreaNo*32].instrument = instrument;
-        this->notedata[_chno][tickNo+_buffAreaNo*32].pitch = pitch;
-        this->notedata[_chno][tickNo+_buffAreaNo*32].octave = octave;
-        this->notedata[_chno][tickNo+_buffAreaNo*32].sfxno = sfxno;
-        this->notedata[_chno][tickNo+_buffAreaNo*32].volume = volume;
-        this->notedata[_chno][tickNo+_buffAreaNo*32].effectNo = effectNo;
-        this->notedata[_chno][tickNo+_buffAreaNo*32].looplen = loopEnd - loopStart; 
-    // }
+
+    // オクターブの増加に応じて周波数を調整
+    float octaveFactor = pow(2.0, octave - 4);
+
+    // ドレミの差に基づいて周波数を計算
+    float frequency = baseFrequency * octaveFactor * pow(2.0, (pitch-4) / 12.0);
+    return frequency;
 }
 
-void Channel::setPatterns(size_t _patternNo, size_t _ch0, size_t _ch1, size_t _ch2, size_t _ch3, size_t _ch4, size_t _ch5, size_t _ch6, size_t _ch7)
+void Channel::setupHz(){
+        // 周波数リストを計算する
+    for (int p = 0; p < numPitches; ++p) {
+        for (int o = 0; o < numOctaves; ++o) {
+            hzList[p][o] = calculateFrequency(p, o);
+            // Serial.print(hzList[p][o]);
+            // Serial.print(":");
+        }
+        // Serial.println(" ");
+    }
+}
+
+
+void Channel::setTones(uint8_t onoffF, uint8_t loopStart, uint8_t loopEnd, uint8_t instrument, uint8_t pitch, uint8_t octave, uint8_t sfxno, 
+uint8_t volume, uint8_t effectNo, uint8_t tickNo, uint8_t _chno, uint8_t _patternNo) {
+uint8_t bufNo = _patternNo%2;
+    // メンバ変数の初期化
+    this->notedata[_chno][tickNo+bufNo*32].onoffF = onoffF;
+    this->notedata[_chno][tickNo+bufNo*32].loopStart = loopStart;
+    this->notedata[_chno][tickNo+bufNo*32].loopEnd = loopEnd;
+    this->notedata[_chno][tickNo+bufNo*32].hz = hzList[pitch][octave]; // pitchとoctaveをそのまま使用
+    this->notedata[_chno][tickNo+bufNo*32].instrument = instrument;
+    this->notedata[_chno][tickNo+bufNo*32].pitch = pitch;
+    this->notedata[_chno][tickNo+bufNo*32].octave = octave;
+    this->notedata[_chno][tickNo+bufNo*32].sfxno = sfxno;
+    this->notedata[_chno][tickNo+bufNo*32].volume = volume;
+    this->notedata[_chno][tickNo+bufNo*32].effectNo = effectNo;
+    this->notedata[_chno][tickNo+bufNo*32].looplen = loopEnd - loopStart;
+}
+
+
+void Channel::setPatterns(uint8_t _patternNo, uint8_t _ch0, uint8_t _ch1, uint8_t _ch2, uint8_t _ch3, uint8_t _ch4, uint8_t _ch5, uint8_t _ch6, uint8_t _ch7)
 {
     // メンバ変数の初期化
     patterns[_patternNo][0] = _ch0;
@@ -98,62 +127,49 @@ void Channel::setPatterns(size_t _patternNo, size_t _ch0, size_t _ch1, size_t _c
     patterns[_patternNo][7] = _ch7;
 }
 
-void Channel::setPatterns(size_t _patternNo, size_t _ch, size_t _patternID)
+void Channel::setPatterns(uint8_t _patternNo, uint8_t _ch, uint8_t _patternID)
 {
     // メンバ変数の初期化
     patterns[_patternNo][_ch] = _patternID;
 }
 
-size_t Channel::getPatternID(size_t _patternNo, size_t _chno){
+uint8_t Channel::getPatternID(uint8_t _patternNo, uint8_t _chno){
     return patterns[_patternNo][_chno];
 }
 
-void Channel::resetTones(size_t tickNo, size_t _sfxno, size_t _pitch, size_t _octave, size_t _volume, size_t _instrument, size_t _effectNo, size_t _buffAreaNo)
+void Channel::resetTones(uint8_t tickNo, uint8_t _sfxno, uint8_t _pitch, uint8_t _octave, uint8_t _volume, uint8_t _instrument, uint8_t _effectNo)
 {
-    this->notedata[_sfxno][tickNo+_buffAreaNo*32].pitch = _pitch;
-    this->notedata[_sfxno][tickNo+_buffAreaNo*32].octave = _octave;
-    this->notedata[_sfxno][tickNo+_buffAreaNo*32].volume = _volume;
-    this->notedata[_sfxno][tickNo+_buffAreaNo*32].hz = calculateFrequency(_pitch, _octave);
-    this->notedata[_sfxno][tickNo+_buffAreaNo*32].instrument = _instrument;
-    this->notedata[_sfxno][tickNo+_buffAreaNo*32].effectNo = _effectNo;
+    this->notedata[_sfxno][tickNo].pitch = _pitch;
+    this->notedata[_sfxno][tickNo].octave = _octave;
+    this->notedata[_sfxno][tickNo].volume = _volume;
+    this->notedata[_sfxno][tickNo].hz = calculateFrequency(_pitch, _octave);
+    this->notedata[_sfxno][tickNo].instrument = _instrument;
+    this->notedata[_sfxno][tickNo].effectNo = _effectNo;
 }
 
-bool Channel::note(size_t channelno, size_t tick, size_t _patternNo){
-    size_t _buffAreaNo = _patternNo;
-    // setChannelVolume(channelno, this->notedata[channelno][tick].volume*16);//BGM
-    // tone(this->notedata[channelno][tick%32].hz, tickTime, channelno, true, _tone_wav[instrument], 16, false);
+bool Channel::note(uint8_t channelno, uint8_t tick, uint8_t _patternNo){
+    uint8_t bufNo = _patternNo%2;
+    uint8_t targetChNo = patterns[_patternNo][channelno];
     
-    size_t targetChNo = patterns[_patternNo][channelno];
+    speakerEffectNo = this->notedata[targetChNo][(tick%TONE_NUM)+bufNo*32].effectNo;//noteパラメータの情報でエフェクトをかける
 
-    // size_t sfxNo = this->notedata[sfxNo][tick%32].sfxno;//noteパラメータの情報でエフェクトをかける
-    speakerEffectNo = this->notedata[targetChNo][tick%32].effectNo;//noteパラメータの情報でエフェクトをかける
-    setChannelVolume(targetChNo, this->notedata[targetChNo][tick%32].volume*16);//BGM
+    M5.Speaker.setChannelVolume(targetChNo, this->notedata[targetChNo][tick%32].volume*32);//BGM
 
-
-    tone(
-        this->notedata[targetChNo][(tick+_buffAreaNo*32)%TONE_NUM].hz, 
+    M5.Speaker.tone(
+        this->notedata[targetChNo][(tick%TONE_NUM)+bufNo*32].hz, 
         tickTime, 
         targetChNo, 
         true,
-        _tone_wav[this->notedata[targetChNo][(tick+_buffAreaNo*32)%TONE_NUM].instrument],
+        _tone_wav[this->notedata[targetChNo][(tick%TONE_NUM)+bufNo*32].instrument],
         16,
         false);
-
-    // tone(
-    //     this->notedata[patternNo][tick%32].hz, 
-    //     tickTime, 
-    //     patternNo, 
-    //     true,
-    //     _tone_wav[_instrument],
-    //     16,
-    //     false);
     
     vTaskDelay(tickTime/CHANNEL_NUM);
 
     return true;
 }
 
-size_t Channel::gettick(){
+uint8_t Channel::gettick(){
 return tick;
 }
 

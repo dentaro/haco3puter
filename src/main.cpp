@@ -1,3 +1,10 @@
+using namespace std;
+#include <iostream>
+#include <string>
+#include <vector>
+#include <stdio.h>
+#include <sstream>
+#include <cmath>
 
 #include "baseGame.h"
 
@@ -22,17 +29,100 @@
 #include "Editor.h"
 // #include <PS2Keyboard.h>
 // #include "Speaker_Class.hpp"
-// #include "Channel.hpp"
+#include "Channel.hpp"
 // #include <esp_now.h>
 // #include <WiFi.h>
 #include <M5GFX_DentaroUI.hpp>
 #include <map>
 #include "M5Cardputer.h"
 
+
+
+static void tone_up(bool holding)
+{
+  static int tone_hz;
+  if (!holding) { tone_hz = 100; }
+  M5.Speaker.tone(++tone_hz, 1000, 1);
+}
+
+static void m_volume_up(bool)
+{
+  int v = M5.Speaker.getVolume() + 1;
+  if (v < 256) { M5.Speaker.setVolume(v); }
+}
+
+static void m_volume_down(bool)
+{
+  int v = M5.Speaker.getVolume() - 1;
+  if (v >= 0) { M5.Speaker.setVolume(v); }
+}
+
+static void c_volume_up(bool)
+{
+  int v = M5.Speaker.getChannelVolume(0) + 1;
+  if (v < 256) { M5.Speaker.setChannelVolume(0, v); }
+}
+
+static void c_volume_down(bool)
+{
+  int v = M5.Speaker.getChannelVolume(0) - 1;
+  if (v >= 0) { M5.Speaker.setChannelVolume(0, v); }
+}
+
+void soundsetup(void)
+{
+
+  { /// I2S Custom configurations are available if you desire.
+    auto spk_cfg = M5.Speaker.config();
+
+    if (spk_cfg.use_dac || spk_cfg.buzzer)
+    {
+    /// Increasing the sample_rate will improve the sound quality instead of increasing the CPU load.
+      spk_cfg.sample_rate = 192000; // default:64000 (64kHz)  e.g. 48000 , 50000 , 80000 , 96000 , 100000 , 128000 , 144000 , 192000 , 200000
+    }
+    M5.Speaker.config(spk_cfg);
+  }
+  M5.Speaker.begin();
+
+  M5.Speaker.tone(2000, 100);
+
+  M5.delay(100);
+
+  /// play 1000Hz tone sound, 100 msec. 
+  M5.Speaker.tone(1000, 100);
+
+  M5.delay(100);
+  // M5.Speaker.setAllChannelVolume(0);
+  M5.Speaker.setVolume(64);
+
+  while (M5.Speaker.isPlaying()) { M5.delay(1); } // Wait for the output to finish.
+
+}
+
+#define SOUND_OFF_STATE 0
+#define SOUND_ON_STATE  1
+
+int8_t soundState = SOUND_OFF_STATE;
+Channel* channels = new Channel();
+// // //音関連
+uint8_t buffAreaNo = 0;
+uint8_t gEfectNo = 0;
+float effectVal = 0.0f;
+uint8_t tick = 0;
+uint8_t instrument = 0;
+uint8_t targetChannelNo = 0;//描画編集する効果音番号を設定（sfx(n)のnで効果音番号を指定することで作った効果音がなる）
+uint8_t tickTime = 100;//スピードがかえられる
+uint8_t tickSpeed = 5;//連動してない
+uint8_t patternNo = 0;//0~63
+
+
+TaskHandle_t taskHandle[2];
+SemaphoreHandle_t syncSemaphore;
+SemaphoreHandle_t nextFrameSemaphore;
+
 bool textMoveF = false;
 bool shiftF = false;
 
-float effectVal;
 bool enemyF = false;
 uint8_t enemyX = 0;
 uint8_t enemyY = 0;
@@ -62,9 +152,12 @@ static int menu_padding = 36;
 #define TFT_RUN_MODE 0
 #define TFT_EDIT_MODE 1
 // #define TFT_WIFI_MODE 2
+#define TFT_SOUNDEDIT_MODE 3
 
 int gameState = 0;
 uint8_t toolNo = 0;
+
+uint8_t masterVol = 64;
 
 String data = "> ";
 
@@ -295,7 +388,12 @@ using namespace std;
 
 #define BUF_PNG_NUM 0
 
+#define CH1_VIEW_MODE 1
+#define CH8_VIEW_MODE 8
+
 uint8_t mainVol = 180;
+
+uint8_t ch_viewmode = CH8_VIEW_MODE;
 
 //outputmode最終描画の仕方
 // int outputMode = FAST_MODE;//50FPS程度128*128 速いけど小さい画面　速度が必要なモード
@@ -370,12 +468,6 @@ int divnum = 8;
 bool readMapF = false;
 //divnumが大きいほど少ない領域で展開できる(2の乗数)
 
-// uint8_t gIMGBuf88_0[32];
-// uint8_t gIMGBuf64[8192];
-// uint8_t gIMGBuf64[4096];
-// uint8_t gIMGBuf2[32768];
-// uint8_t gIMGBuf2[4096]; //32768/4096=8スコープを抜けると自動で開放再利用できる
-
 // M5Canvas spritebg[16];//16種類のスプライトを背景で使えるようにする
 M5Canvas spriteMap;//地図用スプライト
 // uint8_t mapArray[MAPWH][MAPWH];
@@ -421,8 +513,6 @@ int ytileNo = 12909;
 M5Canvas sprref;
 String oldKeys[BUF_PNG_NUM];
 
-
-
 /** 画像をSPIFFSから読み込む */
 // void readIMG() {
 //   auto file = SPIFFS.open("/init/initspr.png", "r");
@@ -446,7 +536,6 @@ Vector2<int> getSign(int dirno) {
     }
 }
 
-
 uint16_t gethaco3Col(uint8_t haco3ColNo) {
     uint16_t result = ((static_cast<uint16_t>(clist2[haco3ColNo][0]) >> 3) << 11) |
                       ((static_cast<uint16_t>(clist2[haco3ColNo][1]) >> 2) << 5) |
@@ -463,32 +552,6 @@ vector<string> split(string& input, char delimiter)
         result.push_back(field);
     }
     return result;
-}
-
-// 送信コールバック
-// void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  // char macStr[18];
-  // snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
-  //          mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-  // tft.print("Last Packet Sent to: ");
-  // tft.println(macStr);
-  // tft.print("Last Packet Send Status: ");
-  // tft.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
-// }
-
-// 受信コールバック
-void OnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
-  char macStr[18];
-  char msg[1];
-  snprintf(macStr, sizeof(macStr), "%02X:%02X:%02X:%02X:%02X:%02X",
-           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-  // tft.printf("Last Packet Recv from: %s\n", macStr);//MACアドレスを表示させる
-  tft.printf("Last Packet Recv Data(%d): ", data_len);
-  for ( int i = 0 ; i < data_len ; i++ ) {
-    msg[1] = data[i];
-    tft.print(msg[1]);
-  }
-  tft.println("");
 }
 
 Vector2<int> getKey2Sign(String _currentKey, String _targetKey) {
@@ -834,8 +897,6 @@ void setOpenConfig(String fileName, uint8_t _isEditMode) {
   fw.close(); // ファイルを閉じる
 }
 
-
-
 int readMap()
 {
   mapready = false;
@@ -908,14 +969,6 @@ int readMap()
   return 1;
 }
 
-using namespace std;
-#include <iostream>
-#include <string>
-#include <vector>
-#include <stdio.h>
-#include <sstream>
-#include <cmath>
-
 // vector<string> split(string& input, char delimiter)
 // {
 //     istringstream stream(input);
@@ -970,7 +1023,6 @@ void restart(String _fileName, int _isEditMode)
   // tunes.resume();
 }
 
-
 // void broadchat() {
 //   if ("/init/chat/m.txt" == NULL) return;
 //   File fp = SPIFFS.open("/init/chat/m.txt", FILE_READ); // SPIFFSからファイルを読み込み
@@ -1013,180 +1065,476 @@ void restart(String _fileName, int _isEditMode)
 
 uint8_t readpixel(int i, int j)
 {
-        // int k = j+(MAPWH/divnum)*(n);//マップ下部
-        colValR = sprite64.readPixelRGB(i,j).R8();
-        colValG = sprite64.readPixelRGB(i,j).G8();
-        colValB = sprite64.readPixelRGB(i,j).B8();
+  // int k = j+(MAPWH/divnum)*(n);//マップ下部
+  colValR = sprite64.readPixelRGB(i,j).R8();
+  colValG = sprite64.readPixelRGB(i,j).G8();
+  colValB = sprite64.readPixelRGB(i,j).B8();
 
   //16ビットRGB（24ビットRGB）
-        if(colValR==0&&colValG==0&&colValB==0){//0: 黒色=なし
-          return 0;//20;
-        }else if(colValR==24&&colValG==40&&colValB==82){//{ 27,42,86 },//1: 暗い青色
-          return 1;//11;//5*8+5;
-        }else if(colValR==140&&colValG==24&&colValB==82){//{ 137,24,84 },//2: 暗い紫色
-          return 2;//32;//5*8+5;
-        }else if(colValR==0&&colValG==138&&colValB==74){//{ 0,139,75 },//3: 暗い緑色
-          return 3;//44;//5*8+5;
-        }else if(colValR==181&&colValG==77&&colValB==41){//{ 183,76,45 },//4: 茶色 
-          return 4;//53;//5*8+5;
-        }else if(colValR==99&&colValG==85&&colValB==74){//{ 97,87,78 },//5: 暗い灰色
-          return 5;//49;
-        }else if(colValR==198&&colValG==195&&colValB==198){//{ 194,195,199 },//6: 明るい灰色
-          return 6;//54;//5*8+5;
-        }else if(colValR==255&&colValG==243&&colValB==231){//{ 255,241,231 },//7: 白色
-          return 7;//32;
-        }else if(colValR==255&&colValG==0&&colValB==66){//{ 255,0,70 },//8: 赤色
-          return 8;//52;
-        }else if(colValR==255&&colValG==162&&colValB==0){//{ 255,160,0 },//9: オレンジ
-          return 9;//41;//5*8+5;
-        }else if(colValR==255&&colValG==239&&colValB==0){//{ 255,238,0 },//10: 黄色
-          return 10;//46;
-        }else if(colValR==0&&colValG==235&&colValB==0){//{ 0,234,0 },//11: 緑色
-          return 11;//42;
-        }else if(colValR==0&&colValG==174&&colValB==255){//{ 0,173,255 },//12: 水色
-          return 12;//45;//5*8+5;
-        }else if(colValR==132&&colValG==117&&colValB==156){//{ 134,116,159 },//13: 藍色
-          return 13;//50;
-        }else if(colValR==255&&colValG==105&&colValB==173){//{ 255,107,169 },//14: ピンク
-          return 14;//43;//5*8+5;
-        }else if(colValR==255&&colValG==203&&colValB==165){//{ 255,202,165}//15: 桃色
-          return 15;//38;//5*8+5;
-        }
+  if(colValR==0&&colValG==0&&colValB==0){//0: 黒色=なし
+    return 0;//20;
+  }else if(colValR==24&&colValG==40&&colValB==82){//{ 27,42,86 },//1: 暗い青色
+    return 1;//11;//5*8+5;
+  }else if(colValR==140&&colValG==24&&colValB==82){//{ 137,24,84 },//2: 暗い紫色
+    return 2;//32;//5*8+5;
+  }else if(colValR==0&&colValG==138&&colValB==74){//{ 0,139,75 },//3: 暗い緑色
+    return 3;//44;//5*8+5;
+  }else if(colValR==181&&colValG==77&&colValB==41){//{ 183,76,45 },//4: 茶色 
+    return 4;//53;//5*8+5;
+  }else if(colValR==99&&colValG==85&&colValB==74){//{ 97,87,78 },//5: 暗い灰色
+    return 5;//49;
+  }else if(colValR==198&&colValG==195&&colValB==198){//{ 194,195,199 },//6: 明るい灰色
+    return 6;//54;//5*8+5;
+  }else if(colValR==255&&colValG==243&&colValB==231){//{ 255,241,231 },//7: 白色
+    return 7;//32;
+  }else if(colValR==255&&colValG==0&&colValB==66){//{ 255,0,70 },//8: 赤色
+    return 8;//52;
+  }else if(colValR==255&&colValG==162&&colValB==0){//{ 255,160,0 },//9: オレンジ
+    return 9;//41;//5*8+5;
+  }else if(colValR==255&&colValG==239&&colValB==0){//{ 255,238,0 },//10: 黄色
+    return 10;//46;
+  }else if(colValR==0&&colValG==235&&colValB==0){//{ 0,234,0 },//11: 緑色
+    return 11;//42;
+  }else if(colValR==0&&colValG==174&&colValB==255){//{ 0,173,255 },//12: 水色
+    return 12;//45;//5*8+5;
+  }else if(colValR==132&&colValG==117&&colValB==156){//{ 134,116,159 },//13: 藍色
+    return 13;//50;
+  }else if(colValR==255&&colValG==105&&colValB==173){//{ 255,107,169 },//14: ピンク
+    return 14;//43;//5*8+5;
+  }else if(colValR==255&&colValG==203&&colValB==165){//{ 255,202,165}//15: 桃色
+    return 15;//38;//5*8+5;
+  }
 }
 
-
-static void tone_up(bool holding)
-{
-  static int tone_hz;
-  if (!holding) { tone_hz = 100; }
-  // speaker->tone(++tone_hz, 1000, 1);
-}
-
-static void bgm_play_stop(bool holding = false)
-{
-  // if (holding) { return; }
-  // if (speaker->isPlaying(0))
-  // {
-  //   speaker->stop(0);
-  // }
-  // else
-  // {
-  //   speaker->playWav(wav_with_header, sizeof(wav_with_header), ~0u, 0, true);
-  // }
-}
-
-static void m_volume_up(bool)
-{
-  // int v = speaker->getVolume() + 1;
-  // if (v < 256) { speaker->setVolume(v); }
-}
-
-static void m_volume_down(bool)
-{
-  // int v = speaker->getVolume() - 1;
-  // if (v >= 0) { speaker->setVolume(v); }
-}
-
-static void c_volume_up(bool)
-{
-  // int v = speaker->getChannelVolume(0) + 1;
-  // if (v < 256) { speaker->setChannelVolume(0, v); }
-}
-
-static void c_volume_down(bool)
-{
-  // int v = speaker->getChannelVolume(0) - 1;
-  // if (v >= 0) { speaker->setChannelVolume(0, v); }
-}
-
-struct menu_item_t
-{
-  const char* title;
-  void (*func)(bool);
-};
-
-// static const menu_item_t menus[] =
-// {
-//   { "tone"      , tone_up       },
-//   { "play/stop" , bgm_play_stop },
-//   { "ms vol u"  , m_volume_up   },
-//   { "ms vol d"  , m_volume_down },
-//   { "ch vol u"  , c_volume_up   },
-//   { "ch vol d"  , c_volume_down },
-// };
-// const uint8_t menu_count = sizeof(menus) / sizeof(menus[0]);
-
-uint8_t cursor_index = 0;
 
 
 void safeReboot(){
   editor.setCursorConfig(0,0,0);//カーソルの位置を強制リセット保存
-      delay(50);
+  delay(50);
 
-      //ui.setConstantGetF(false);//初期化処理 タッチポイントの常時取得を切る
-      appfileName = "/init/main.lua";
-      
-      firstLoopF = true;
-      toneflag = false;
-      sfxflag = false;
-      musicflag = false;
+  //ui.setConstantGetF(false);//初期化処理 タッチポイントの常時取得を切る
+  appfileName = "/init/main.lua";
+  
+  firstLoopF = true;
+  toneflag = false;
+  sfxflag = false;
+  musicflag = false;
 
-      editor.editorSave(SPIFFS);//SPIFFSに保存
-      delay(100);//ちょっと待つ
-      reboot(appfileName, TFT_RUN_MODE);//現状rebootしないと初期化が完全にできない
+  editor.editorSave(SPIFFS);//SPIFFSに保存
+  delay(100);//ちょっと待つ
+  reboot(appfileName, TFT_RUN_MODE);//現状rebootしないと初期化が完全にできない
+}
+
+void showMusicInfo(){
+    tft.setCursor(128,1);
+    if(patternNo<10)tft.print("0");
+    tft.print(patternNo);
+
+    tft.setCursor(148,1);
+    // tft.print("SP");
+    if(tickSpeed<10)tft.print("0");
+    tft.print(tickSpeed);
+    
+tft.drawLine(128, 9, 160, 9, gethaco3Col(6));
+
+    // tft.fillRect(128, 10, 32, 20, gethaco3Col(13));
+    tft.setCursor(128,11);
+    for(int n = 0;n<4;n++){tft.print(channels->patterns[patternNo][n]);}
+    tft.setCursor(128,21);
+    for(int n = 0;n<4;n++){tft.print(channels->patterns[patternNo][4+n]);}
+
+tft.drawLine(128,29, 160,29, gethaco3Col(6));
+
+    // tft.fillRect(138, 30, 32, 40, gethaco3Col(2));
+    tft.setCursor(138,31);
+    tft.print("IN");
+    tft.print(instrument);
+    tft.fillRect(128, 30, 10, 9, gethaco3Col(instrument+4));
+
+tft.drawLine(128, 39, 160, 39, gethaco3Col(6));
+
+    tft.setCursor(138,41);
+    tft.print(" ");
+    // tft.print(instrument);
+    // tft.fillRect(128, 40, 10, 9, gethaco3Col(instrument+8));
+
+tft.drawLine(128, 49, 160, 49, gethaco3Col(6));
+
+
+    tft.setCursor(138,51);
+    tft.print("CH");
+    tft.print(targetChannelNo);
+    tft.fillRect(128, 50, 10, 9, gethaco3Col(targetChannelNo));
+
+tft.drawLine(128, 59, 160,59, gethaco3Col(6));
+
+    tft.setCursor(138,61);
+    tft.print("EF");
+    tft.print(gEfectNo);
+    tft.fillRect(128, 60, 10, 9, gethaco3Col(gEfectNo));
+
+tft.drawLine(128, 69, 160,69, gethaco3Col(6));
+    int vw=2;
+    int vh=1;
+    for(int vx=0; vx<16; vx++){
+      if(masterVol > 16*vx){
+        tft.fillRect(128+vx*vw, 71+(7-vx/2), vw, vx/2, gethaco3Col(8));
+      }
+    }
+    tft.setCursor(128, 71);
+    tft.print(masterVol);
+tft.drawLine(128, 79, 160,79, gethaco3Col(6));
+
 }
 
 
+void controlMusicVisual(){
+      for(int i = 0; i<32; i++)//32音書き換える
+      {
+        uint8_t efn = channels->notedata[targetChannelNo][i].effectNo;
+        uint8_t ins = channels->notedata[targetChannelNo][i].instrument;
+        uint8_t vol = channels->notedata[targetChannelNo][i].volume;
+        uint8_t oct = channels->notedata[targetChannelNo][i].octave;
+        uint8_t pit = channels->notedata[targetChannelNo][i].pitch;
+
+        // if (ui.getEvent() != NO_EVENT)
+        // {
+        //   if((ui.getPos().x-40)>>2==i){//押した1音だけの音色を変える
+        //     if(96>ui.getPos().y && 0<=ui.getPos().y){ //上の領域で
+        //       //音程を変える
+        //       pit = (96 - ui.getPos().y)>>2 % 12;
+        //       oct = 4;//floor((96 - ui.getPos().y)>>2 / 12)+3;
+        //       //音色を変える
+        //       ins = instrument;
+        //       //エフェクトを変える
+        //       efn = gEfectNo;
+        //     }
+            
+        //     if(128>ui.getPos().y && 96<=ui.getPos().y){//下の領域で
+        //       //音量を変える
+        //       vol = (124 - ui.getPos().y)>>2 % 8;
+        //     }
+        //     buffAreaNo = patternNo%2;
+        //     channels->resetTones(i, targetChannelNo, pit, oct, vol, ins, efn, buffAreaNo);//ピッチ,オクターブなどトーンを置き換える
+        //   }
+        // }
+
+        if(tick == i){
+
+          tft.fillRect(i*4, 92-(pit + (oct-4)*12)*4, 4,4, gethaco3Col(10));
+          tft.fillRect(i*4, 124-(vol)*4, 4,4, gethaco3Col(10));
+
+        }else{
+          if(efn!=0)tft.drawLine(i*4, 92-(pit + (oct-4)*12)*4+3, i*4+3, 92-(pit + (oct-4)*12)*4+3, gethaco3Col(efn+8));
+
+          tft.fillRect(i*4, 92-(pit + (oct-4)*12)*4, 4,3, gethaco3Col(ins+4));
+          tft.fillRect(i*4, 124-(vol)*4, 4,4, gethaco3Col(3));
+        }
+
+      }
+}
+
+void showMusicVisual(){//操作できないタイプ
+    for(int i = 0; i<32; i++)//32音書き換える
+    {
+      uint8_t efn = channels->notedata[targetChannelNo][i].effectNo;
+      uint8_t ins = channels->notedata[targetChannelNo][i].instrument;
+      uint8_t vol = channels->notedata[targetChannelNo][i].volume;
+      uint8_t oct = channels->notedata[targetChannelNo][i].octave;
+      uint8_t pit = channels->notedata[targetChannelNo][i].pitch;
+
+      if(tick == i){
+        tft.fillRect(i*4, 92-(pit + (oct-4)*12)*4, 4,4, gethaco3Col(10));
+        tft.fillRect(i*4, 124-(vol)*4, 4,4, gethaco3Col(10));
+      }else{
+        if(efn!=0)tft.drawLine(i*4, 92-(pit + (oct-4)*12)*4+3, i*4+3, 92-(pit + (oct-4)*12)*4+3, gethaco3Col(efn+8));
+
+        tft.fillRect(i*4, 92-(pit + (oct-4)*12)*4, 4,3, gethaco3Col(ins+4));
+        tft.fillRect(i*4, 124-(vol)*4, 4,4, gethaco3Col(3));
+      }
+    }
+}
+
+
+void showMusicVisual8ch(){//操作できないタイプ
+
+for(uint8_t chx = 0; chx<2; chx++)
+{
+  for(uint8_t chy = 0; chy<4; chy++)
+  {
+    if(chx*4+chy == targetChannelNo){
+      tft.drawRect(chx*64, chy*32, 64,32, gethaco3Col(8));
+    }
+
+    for(int i = 0; i<32; i++)//32音書き換える
+      {
+        uint8_t efn = channels->notedata[chx*4+chy][i].effectNo;
+        uint8_t ins = channels->notedata[chx*4+chy][i].instrument;
+        uint8_t vol = channels->notedata[chx*4+chy][i].volume;
+        uint8_t oct = channels->notedata[chx*4+chy][i].octave;
+        uint8_t pit = channels->notedata[chx*4+chy][i].pitch;
+
+        if(tick == i){
+          tft.drawPixel(i*2+(64*chx),  (23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(10));
+          tft.drawPixel(i*2+(64*chx),  (31-(vol))+(32*chy), gethaco3Col(10));
+        }else{
+          if(efn!=0)
+          tft.drawPixel(i*2+(64*chx)+1,(23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(efn+8));
+
+          tft.drawPixel(i*2+(64*chx),  (23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(ins+4));
+          tft.drawPixel(i*2+(64*chx),  (31-(vol))+(32*chy), gethaco3Col(3));
+        }
+      }
+      
+    }
+  }
+}
+
+
+bool createChannels()
+{
+uint8_t addTones[8];
+String line;
+int j = 0;
+
+// パターンファイルを読み込む
+File fr = SPIFFS.open("/init/sound/patterns.csv", "r");
+if (!fr)
+{
+  Serial.println("Failed to open patterns.csv");
+  return true; // とりあえず進む
+}
+
+// j = 0;
+while (fr.available()) // 64行だけ読み込む
+{
+  line = fr.readStringUntil('\n'); // 64行文のパターン（小節）があります
+  line.trim();                      // 空白を削除
+
+  if (!line.isEmpty())
+  {
+    int commaIndex = line.indexOf(',');
+    if (commaIndex != -1)
+    {
+      String val = line.substring(0, commaIndex);
+      addTones[0] = val.toInt();
+
+      for (int i = 1; i < 8; i++)
+      {
+        int nextCommaIndex = line.indexOf(',', commaIndex + 1);
+        if (nextCommaIndex != -1)
+        {
+          val = line.substring(commaIndex + 1, nextCommaIndex);
+          addTones[i] = val.toInt();
+          commaIndex = nextCommaIndex;
+        }
+        else
+        {
+          // Handle the case where there is no trailing comma
+          val = line.substring(commaIndex + 1);
+          addTones[i] = val.toInt();
+          break; // Exit the loop since we reached the end of the line
+        }
+      }
+
+      for(uint8_t n=0; n<CHANNEL_NUM; n++){
+        channels->setPatterns(j, n, addTones[n]);
+      }
+      
+      j++;
+    }
+  }
+}
+fr.close();
+  //すべてが終わったらtrueを返す
+  return true;
+}
+
+bool readTones(uint8_t _patternNo)
+{
+  // uint8_t addTones[8];
+  // String line;
+  // int j = 0;
+  // uint8_t patternID = 0;
+
+  // トーンファイルを読み込む
+  File fr;
+  for (int chno = 0; chno < CHANNEL_NUM; chno++)
+    {
+    uint8_t addTones[8];
+    String line;
+    int j = 0;
+    uint8_t patternID = 0;
+    
+    patternID = channels->getPatternID( _patternNo, chno);
+    // File fr = SPIFFS.open("/init/sound/pattern/"+String(patternID+buffAreaNo)+".csv", "r");
+    fr = SPIFFS.open("/init/sound/pattern/"+String(patternID)+".csv", "r");
+    if (!fr)
+    {
+      Serial.println("Failed to open tones.csv");
+      return true;//とりあえず進む
+    }
+    while (fr.available())
+    {
+      line = fr.readStringUntil('\n');
+      // line.trim(); // 空白を削除
+      if (!line.isEmpty())
+      {
+        int commaIndex = line.indexOf(',');
+        if (commaIndex != -1)
+        {
+          String val = line.substring(0, commaIndex);
+
+          for (int i = 0; i < 8; i++)
+          {
+            int nextCommaIndex = line.indexOf(',', commaIndex + 1);
+            if (nextCommaIndex != -1)
+            {
+              val = line.substring(commaIndex + 1, nextCommaIndex);
+              addTones[i] = val.toInt();
+              commaIndex = nextCommaIndex;
+            }
+          }
+
+          channels->setTones(
+              1,
+              addTones[0], addTones[1], //loopStart, loopEnd,
+              addTones[2], addTones[3],//instrument, pitch,
+              addTones[4], addTones[5],//octave, sfxno, 
+              addTones[6], addTones[7], j, chno, _patternNo+1);//volume, effectNo,tickNo,chno
+          j++;
+        }
+      }
+    }
+    
+  }
+  fr.close();
+
+  //すべてが終わったらtrueを返す
+  return true;
+}
+
+
+void createChTask(void *pvParameters) {
+    while (true) {
+      while (!createChannels()) {
+          delay(10);
+      }
+      readTones(patternNo);
+      xSemaphoreGive(syncSemaphore);
+      delay(10);
+    }
+}
+
+void musicTask(void *pvParameters) {
+  while (true) {
+      // 何らかの条件が満たされるまで待機
+      
+    if (xSemaphoreTake(syncSemaphore, portMAX_DELAY)) {
+      // 同期が取れたらここに入る
+      channels->begin();
+      // if(soundState == SOUND_ON_STATE){
+        // channels->setVolume(masterVol); // 0-255
+        M5.Speaker.setVolume(masterVol);// 0-255
+
+        // M5.Speaker.setAllChannelVolume(64);
+
+        channels->note(4, tick, patternNo);
+        channels->note(5, tick, patternNo);
+        channels->note(6, tick, patternNo);
+        channels->note(7, tick, patternNo);
+
+        channels->note(0, tick, patternNo);
+        channels->note(1, tick, patternNo);
+        channels->note(2, tick, patternNo);
+        channels->note(3, tick, patternNo);
+
+        
+      // }
+      channels->stop();
+      xSemaphoreGive(syncSemaphore);
+    }
+
+    tick++;
+    tick %= TONE_NUM;
+
+    if (tick == 0) {
+        patternNo++;
+
+        if (patternNo >= PATTERN_NUM) {
+            patternNo = 0;
+        }
+    }
+    // delay(1);
+      }
+  
+
+  // 他の処理や適切な待機時間をここに追加
+  // delay(10);
+    
+}
+
 void setup()
 {
+  Serial.begin(115200);
 
   auto cfg = M5.config();
   // M5.begin(cfg);
   M5Cardputer.begin(cfg);
-  
-  int textsize = M5Cardputer.Display.height() / 60;
-  if (textsize == 0) {
-      textsize = 1;
-  }
-  M5Cardputer.Display.setTextSize(textsize);
-
-  // pinMode(OUTPIN_0, OUTPUT);
-  // pinMode(INPIN_0, INPUT);
-  
+  SPIFFS.begin();
   ui.begin( M5Cardputer.Display, 16, 1);
-  Serial.begin(115200);
-  // Serial.begin(9600);
-  // keyboard.begin(KEYBOARD_DATA, KEYBOARD_CLK);
+
+  soundsetup();
+
+  // 同期用セマフォの作成
+  syncSemaphore = xSemaphoreCreateBinary();
+  nextFrameSemaphore = xSemaphoreCreateBinary();
+
+  // createChannelsTask タスクの作成（コア0で実行）
+  xTaskCreatePinnedToCore(
+    createChTask,
+    "createChTask",
+    8192,//~3000だと非力だけど動く//2048,4096なら動く//1024だと動かない
+    NULL,
+    1,
+    &taskHandle[0],  // タスクハンドルを取得
+    0//0だと落ちる
+  );
+
+  // musicTask タスクの作成（コア1で実行）
+  xTaskCreatePinnedToCore(
+    musicTask,
+    "musicTask",
+    8192,////1024だと動く//1500だと非力だけど動く//2048だと動く
+    NULL,
+    2,
+    &taskHandle[1],//NULL,// タスクハンドルを取得
+    1 // タスクを実行するコア（0または1）
+  );
+
+  // createChannelsが完了するまでmusicTaskをブロック
+    while (!createChannels()) {
+        delay(1);
+    }
+    // buffAreaNo = (patternNo+1)%2;//一つ先のパターンを読み込んでおく
+    // readTones(patternNo+1);
+    readTones(patternNo);
+    // //同期用セマフォを解放
+    xSemaphoreGive(syncSemaphore);
+
+  // int textsize = M5Cardputer.Display.height() / 60;
+  // if (textsize == 0) {
+  //     textsize = 1;
+  // }
+
+  // M5Cardputer.Display.setTextSize(textsize);
 
   editor.getCursorConfig("/init/param/editor.txt");//エディタカーソルの位置をよみこむ
 
   delay(50);
-
-  if(firstBootF == true){
-    difffileF = false;
-
-    #if !defined(__MIPSEL__)
-      while (!Serial); // Wait for serial port to connect - used on Leonardo, Teensy and other boards with built-in USB CDC serial connection
-      #endif
-      // Serial.println("Keyboard Start");
-
-    if (!SPIFFS.begin(true))
-    {
-      // Serial.println("An Error has occurred while mounting SPIFFS");
-      return;
-    }
-  }
   
-  
-
   getOpenConfig();//最初に立ち上げるゲームのパスとモードをSPIFFSのファイルopenconfig.txtから読み込む
 
-  // if(firstBootF == false){
-  //   tft.deleteSprite();
-  //   delay(100);
-  // }
-
-  // setTFTedit(TFT_RUN_MODE);
   tft.setPsram( false );//DMA利用のためPSRAMは切る
   tft.createSprite( TFT_WIDTH, TFT_HEIGHT );//PSRAMを使わないギリギリ
   tft.startWrite();//CSアサート開始
@@ -1194,10 +1542,6 @@ void setup()
   sprite88_0.setPsram(false );
   sprite88_0.setColorDepth(16);//子スプライトの色深度
   sprite88_0.createSprite(8, 8);//ゲーム画面用スプライトメモリ確保
-
-  // auto file = SPIFFS.open(mapFileName.c_str(), "r");
-  // file.read(gIMGBuf88_0, 32);
-  // file.close();
 
   uint8_t* gIMGBuf88_0 = new uint8_t[32];
   sprite88_0.drawPng(gIMGBuf88_0, 32,0,0);
@@ -1207,44 +1551,14 @@ void setup()
   sprite64.setColorDepth(16);//子スプライトの色深度
   sprite64.createSprite(PNG_SPRITE_WIDTH, PNG_SPRITE_HEIGHT);//ゲーム画面用スプライトメモリ確保//wroomだと64*128だとメモリオーバーしちゃう問題を色番号配列にして回避した
 
-// const int fileSize = 8192; // ファイルのサイズ（適切な値に修正してください）
-// divnum = 4; // 分割する数（適切な値に修正してください）
-// const int chunkSize = fileSize / divnum; // 分割するデータのサイズ
-
-// auto file = SPIFFS.open("/init/initspr.png", "r");
-
-
-//     for (int n = 0; n < divnum; n++) {
-
-//         file.read(gIMGBuf64, chunkSize);
-//         sprite64.drawPng(gIMGBuf64, chunkSize, 0, (PNG_SPRITE_HEIGHT/divnum)*n );
-//     }
-
-//     file.close();
-  // uint8_t gIMGBuf64[4096];
-  // auto file = SPIFFS.open("/init/initspr.png", "r");
-  // file.read(gIMGBuf64, 4096);
-  // sprite64.drawPng(gIMGBuf64, 4096,0,0);
-
-  // file.close();
-  // file = SPIFFS.open("/init/initspr.png", "r");
-  // file.seek(4096);
-  // file.read(gIMGBuf64, 4096);
-  // sprite64.drawPng(gIMGBuf64, 4096,0, 64*8);
-
-  // file.close();
-
   uint8_t* gIMGBuf64 = new uint8_t[8192];
-
   auto file = SPIFFS.open("/init/initspr.png", "r");
   file.read(gIMGBuf64, 8192);
   sprite64.drawPng(gIMGBuf64, 8192,0,0);
   file.close();
-
   delete[] gIMGBuf64;
 
   sprite64cnos_vector.clear();//初期化処理
-
   for(int y = 0; y < PNG_SPRITE_HEIGHT; y++) {
       for(int x = 0; x < PNG_SPRITE_WIDTH; x++) {
         if(x%2 == 0){
@@ -1253,7 +1567,6 @@ void setup()
         }
       }
   }
-
   //破棄
   sprite64.deleteSprite();
 
@@ -1270,23 +1583,11 @@ void setup()
   spriteMap.setPsram(false );
   spriteMap.setColorDepth(16);//子スプライトの色深度
   spriteMap.createSprite(MAPW, MAPH/divnum);//マップ展開用スプライトメモリ確保
-
-  // if(firstBootF == true)
-  // {
-  // createAbsUI();
-  // appfileName = "/min/main.lua";
-  // isEditMode = 0;
-  // mapFileName = "/init/map/0.png";
-  // readMap();
-  // delay(50);
     
   game = nextGameObject(&appfileName, gameState, mapFileName);//ホームゲームを立ち上げる（オブジェクト生成している）
   game->init();//（オブジェクト生成している）
-  // tunes.init();//（オブジェクト生成している）
-  // }
 
   frame=0;
-
 
   editor.initEditor(tft);
   editor.readFile(SPIFFS, appfileName.c_str());
@@ -1295,21 +1596,6 @@ void setup()
 
   savedAppfileName = appfileName;//起動したゲームのパスを取得しておく
   firstBootF = false;
-
-
-  //キー取得
-  //luaプログラムがバグで起動不能になった場合、ESCを押しながらリセットをかけると、メニューに戻れるようにする
-  //ESCボタンで強制終了
-
-  // if (keyboard.available()) {
-  //   keychar = keyboard.read();
-  //   if (keychar == PS2_ESC) {
-  //     safeReboot();
-  //   }
-  // }
-
-  
-  
 }
 
 bool btnpF = false;
@@ -1317,7 +1603,6 @@ int btnptick = 0;
 
 void loop()
 {
-
   M5Cardputer.update();
 
   if (M5Cardputer.Keyboard.isPressed() == 0) {
@@ -1325,19 +1610,6 @@ void loop()
       if(pressedBtnID != -1){buttonState[pressedBtnID] = -1;}
         pressedBtnID = -1;//リセット   
   }
-
-  // btnpF = false;
-  // if(btnptick <= 15){
-  //   if(btnptick == 0){btnpF = true;}//最初の0だけtrue
-  //   else{btnpF = false;}
-  // }else{
-  //   if(btnptick%4 == 0){
-  //     // Serial.println("定期的にtrue");
-  //     btnpF = true;
-  //   }else{
-  //     btnpF = false;
-  //   }
-  // }
 
   if (M5Cardputer.Keyboard.isChange()) {
     btnptick = 0;
@@ -1347,7 +1619,7 @@ void loop()
     //ボタンが押されているときだけtickがカウントされる
     if(btnptick <= 15){
       if(btnptick==0){btnpF = true;}//最初の0だけtrue
-      else{btnpF = false;}
+      else{btnpF = false;pressedBtnID=-1;}
     }else{
       if(btnptick%4 == 0){
         // Serial.println("定期的にtrue");
@@ -1374,7 +1646,6 @@ void loop()
           pressedBtnID = 6;
         }
         
-
         for (auto i : status.word) {
           Point2D_t keyPos;
           keyPos = M5Cardputer.Keyboard.keyList().at(0);//直前に押されたキーのxy要素を取り出す
@@ -1390,8 +1661,37 @@ void loop()
         // if (status.fn&&keychar == PS2_LEFTARROW) {keychar = PS2_LEFTARROW;editor.editorProcessKeypress(keychar, SPIFFS);}
         // if (status.fn&&keychar == PS2_DOWNARROW) {keychar = PS2_DOWNARROW;editor.editorProcessKeypress(keychar, SPIFFS);}
         // if (status.fn&&keychar == PS2_UPARROW) {keychar = PS2_UPARROW;editor.editorProcessKeypress(keychar, SPIFFS);}
+      if (isEditMode == TFT_SOUNDEDIT_MODE) {
+        
+        if (M5Cardputer.Keyboard.isKeyPressed('~')) {
+        pressedBtnID = 0;
+      } else if (M5Cardputer.Keyboard.isKeyPressed(',')) {
+        pressedBtnID = 1;
+      } else if (M5Cardputer.Keyboard.isKeyPressed('/')) {
+        pressedBtnID = 2;
+      } else if (M5Cardputer.Keyboard.isKeyPressed(';')) {
+        pressedBtnID = 3;
+      } else if (M5Cardputer.Keyboard.isKeyPressed('.')) {
+        pressedBtnID = 4;
+      }else if (M5Cardputer.Keyboard.isKeyPressed('<')) {
+        pressedBtnID = 7;
+      } else if (M5Cardputer.Keyboard.isKeyPressed('?')) {
+        pressedBtnID = 8;
+      } else if (M5Cardputer.Keyboard.isKeyPressed(':')) {
+        pressedBtnID = 5;
+      } else if (M5Cardputer.Keyboard.isKeyPressed('>')) {
+        pressedBtnID = 6;
+      } else if (M5Cardputer.Keyboard.isKeyPressed('|')) {
+        pressedBtnID = 9;
+      } else {
+        
+        //通常の文字
+        if(keychar != -1){
+          editor.editorProcessKeypress(keychar, SPIFFS);
+          }
+        }
 
-        if (isEditMode == TFT_RUN_MODE) {
+      }else if (isEditMode == TFT_RUN_MODE) {
         
         if (M5Cardputer.Keyboard.isKeyPressed('~')) {
         pressedBtnID = 0;
@@ -1472,6 +1772,8 @@ void loop()
     }
   }
 
+
+
   // editor.update(tft, SPIFFS, SD, keychar);
 
   if(pressedBtnID != -1){
@@ -1494,12 +1796,59 @@ void loop()
   //     buttonState[i] ++;
   //   }
   // }
-  
+
   uint32_t now = millis();
   uint32_t remainTime= (now - preTime);
   preTime = now;
 
-  if( isEditMode == TFT_RUN_MODE ){
+  if(isEditMode == TFT_SOUNDEDIT_MODE){
+    if (btnpF) {
+      if(pressedBtnID == 3){
+        targetChannelNo -=1;
+      }else if(pressedBtnID == 4){
+        targetChannelNo +=1;
+      }
+      targetChannelNo%=8;
+      
+      if(pressedBtnID == 1){
+        masterVol -=8;
+      }else if(pressedBtnID == 2){
+        masterVol +=8;
+      }
+      masterVol%=256;
+
+      if (pressedBtnID == 9) {
+
+        if(ch_viewmode == CH1_VIEW_MODE){
+          ch_viewmode = CH8_VIEW_MODE;
+          return;
+        }else if(ch_viewmode == CH8_VIEW_MODE){
+          ch_viewmode = CH1_VIEW_MODE;
+          return;
+        }
+      }
+      // if (keychar == PS2_ENTER) {
+      // }
+    }
+
+    tft.fillScreen(0);
+    if(ch_viewmode == CH1_VIEW_MODE){
+      controlMusicVisual();
+    }else if(ch_viewmode == CH8_VIEW_MODE){
+      showMusicVisual8ch();
+    }
+    showMusicInfo();
+    //最終出力
+    tft.setPivot(0, 0);
+    tft.pushRotateZoom(&M5Cardputer.Display, 40, 3, 0, 1, 1);
+
+    if (pressedBtnID == 0)
+    {
+      reboot("/init/main.lua", TFT_RUN_MODE);
+    }
+
+  }else if( isEditMode == TFT_RUN_MODE ){
+
     //ゲーム内のprint時の文字設定をしておく
     tft.setTextSize(1);//サイズ
     tft.setFont(&lgfxJapanGothicP_8);//日本語可
@@ -1525,9 +1874,6 @@ void loop()
     //ESCボタンで強制終了
     if (pressedBtnID == 0)
     { // reload
-
-      // editor.setCursorConfig(0,0,0);//カーソルの位置を強制リセット保存
-      // delay(50);
 
       appfileName = "/init/main.lua";
       
@@ -1665,5 +2011,9 @@ void loop()
   frame++;
   if(frame > 18446744073709551615)frame = 0;
   delay(1);
+    
+     //最終出力
+    // tft.setPivot(0, 0);
+    // tft.pushRotateZoom(&M5Cardputer.Display, 40, 3, 0, 1, 1);
   
 }
