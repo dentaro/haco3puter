@@ -24,7 +24,7 @@ light = {
 }
 
 function _init()
-
+  snd(0,64)
 end
 
 function _update()

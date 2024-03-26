@@ -22,6 +22,7 @@ end
 
 function _init()--1回だけ
   pal(0)
+  snd(0,64)--サウンド0番を任意のボリューム0~255で鳴らす
 end
 function _update()
   input()
