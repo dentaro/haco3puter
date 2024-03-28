@@ -1,6 +1,3 @@
---  launcher
--- count = 0
--- color(12)
 count = 0
 cursor = 0
 scroll = 0
@@ -19,19 +16,23 @@ function _init()
 end
 
 function drawTab(x, y, w)
-  spr(x, y, 8,8,32,0,8,8) -- left
   for i = 1,w do
-    spr(x + i*8, y,8,8,40,0,8,8) -- middle
+    spr8(50, x + i*8,y+4)
+    spr8(50, x + i*8,y+12)
   end
-  spr(x + w*8 ,y,8,8,48,0,8,8) -- right
+  -- spr(x, y,8,8,32,8,8,8) -- left
+  -- for i = 1,w do
+  --   spr(x + i*8, y,8,8,40,8,8,8) -- middle
+  -- end
+  -- spr(x + w*8 ,y,8,8,48,8,8,8) -- right
 end
 
 function drawDisableTab(x, y, w)
-  spr(x, y,8,8,32,8,8,8) -- left
-  for i = 1,w do
-    spr(x + i*8, y,8,8,40,8,8,8) -- middle
-  end
-  spr(x + w*8 ,y,8,8,48,8,8,8) -- right
+  -- spr(x, y,8,8,32,8,8,8) -- left
+  -- for i = 1,w do
+  --   spr(x + i*8, y,8,8,40,8,8,8) -- middle
+  -- end
+  -- spr(x + w*8 ,y,8,8,48,8,8,8) -- right
 end
 
 -- function drawTile(x, y, w, h)
@@ -43,11 +44,11 @@ end
 -- end
 
 function drawFile()
-  drawTab(0,1,4)
+  drawTab(4,1,4)
   color(1)--textcol
   text("file", 12, 1)
 
-  drawDisableTab(40,1,4)
+  drawDisableTab(44,1,4)
   color(1)--textcol
   text("util", 52, 0)
 
@@ -102,11 +103,11 @@ end
 utilMenu = {"reload", "wifi on", "self wifi on", "reboot", "tone sw", "snd edit","chat"}
 
 function drawUtil()
-  drawDisableTab(0,1,4)
+  drawDisableTab(4,1,4)
   color(1)
   text("file", 12, 1)
 
-  drawTab(40,1,4)
+  drawTab(44,1,4)
   color(1)
   text("util", 52, 0)
 
