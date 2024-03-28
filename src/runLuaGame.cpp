@@ -2234,11 +2234,11 @@ int runLuaGame::l_btnp(lua_State* L)
   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
   int n = lua_tointeger(L, 1);
 
-  if(buttonState[n] <= 15){
+  if(buttonState[n] <= 8){
     if(buttonState[n]==1){lua_pushboolean(L, true);}//最初の１だけtrue
     else{lua_pushboolean(L, false);}
   }else{
-    if(buttonState[n]%4 == 0){
+    if(buttonState[n]%3 == 0){
       // Serial.println("定期的にtrue");
       lua_pushboolean(L, true);
     }else{

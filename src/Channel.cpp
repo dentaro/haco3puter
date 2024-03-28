@@ -25,7 +25,7 @@ extern uint8_t tickTime;
 //     }
 // }
 
-float calculateFrequency(int pitch, int octave) {
+float Channel::calculateFrequency(int pitch, int octave) {
     // A4の周波数（Hz）
     float baseFrequency = 440.0;
 
@@ -149,18 +149,18 @@ void Channel::resetTones(uint8_t tickNo, uint8_t _sfxno, uint8_t _pitch, uint8_t
 
 bool Channel::note(uint8_t channelno, uint8_t tick, uint8_t _patternNo){
     uint8_t bufNo = _patternNo%2;
-    uint8_t targetChNo = patterns[_patternNo][channelno];
+    // uint8_t targetChNo = patterns[_patternNo][channelno];
     
-    speakerEffectNo = this->notedata[targetChNo][(tick%TONE_NUM)+bufNo*32].effectNo;//noteパラメータの情報でエフェクトをかける
+    speakerEffectNo = this->notedata[channelno][(tick%TONE_NUM)+bufNo*32].effectNo;//noteパラメータの情報でエフェクトをかける
 
-    M5.Speaker.setChannelVolume(targetChNo, this->notedata[targetChNo][tick%32].volume*32);//BGM
+    M5.Speaker.setChannelVolume(channelno, this->notedata[channelno][tick%32].volume*32);//BGM
 
     M5.Speaker.tone(
-        this->notedata[targetChNo][(tick%TONE_NUM)+bufNo*32].hz, 
+        this->notedata[channelno][(tick%TONE_NUM)+bufNo*32].hz, 
         tickTime, 
-        targetChNo, 
+        channelno, 
         true,
-        _tone_wav[this->notedata[targetChNo][(tick%TONE_NUM)+bufNo*32].instrument],
+        _tone_wav[this->notedata[channelno][(tick%TONE_NUM)+bufNo*32].instrument],
         16,
         false);
     

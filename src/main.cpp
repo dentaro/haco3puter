@@ -1237,11 +1237,12 @@ void controlMusicVisual(){
 void showMusicVisual(){//操作できないタイプ
     for(int i = 0; i<32; i++)//32音書き換える
     {
-      uint8_t efn = channels->notedata[targetChannelNo][i].effectNo;
-      uint8_t ins = channels->notedata[targetChannelNo][i].instrument;
-      uint8_t vol = channels->notedata[targetChannelNo][i].volume;
-      uint8_t oct = channels->notedata[targetChannelNo][i].octave;
-      uint8_t pit = channels->notedata[targetChannelNo][i].pitch;
+      uint8_t bufNo = patternNo%2;
+      uint8_t efn = channels->notedata[targetChannelNo][i+bufNo*32].effectNo;
+      uint8_t ins = channels->notedata[targetChannelNo][i+bufNo*32].instrument;
+      uint8_t vol = channels->notedata[targetChannelNo][i+bufNo*32].volume;
+      uint8_t oct = channels->notedata[targetChannelNo][i+bufNo*32].octave;
+      uint8_t pit = channels->notedata[targetChannelNo][i+bufNo*32].pitch;
 
       if(tick == i){
         tft.fillRect(i*4, 92-(pit + (oct-4)*12)*4, 4,4, gethaco3Col(10));
@@ -1266,25 +1267,44 @@ for(uint8_t chx = 0; chx<2; chx++)
       tft.drawRect(chx*64, chy*32, 64,32, gethaco3Col(8));
     }
 
+    //バッファ表示
     for(int i = 0; i<32; i++)//32音書き換える
-      {
-        uint8_t efn = channels->notedata[chx*4+chy][i].effectNo;
-        uint8_t ins = channels->notedata[chx*4+chy][i].instrument;
-        uint8_t vol = channels->notedata[chx*4+chy][i].volume;
-        uint8_t oct = channels->notedata[chx*4+chy][i].octave;
-        uint8_t pit = channels->notedata[chx*4+chy][i].pitch;
+    {
+      uint8_t bufNo = (patternNo+1)%2;
+      uint8_t efn = channels->notedata[chx*4+chy][i+bufNo*32].effectNo;
+      uint8_t ins = channels->notedata[chx*4+chy][i+bufNo*32].instrument;
+      uint8_t vol = channels->notedata[chx*4+chy][i+bufNo*32].volume;
+      uint8_t oct = channels->notedata[chx*4+chy][i+bufNo*32].octave;
+      uint8_t pit = channels->notedata[chx*4+chy][i+bufNo*32].pitch;
 
-        if(tick == i){
-          tft.drawPixel(i*2+(64*chx),  (23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(10));
-          tft.drawPixel(i*2+(64*chx),  (31-(vol))+(32*chy), gethaco3Col(10));
-        }else{
-          if(efn!=0)
-          tft.drawPixel(i*2+(64*chx)+1,(23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(efn+8));
+      if(efn!=0)
+      tft.drawPixel(i*2+(64*chx)+1,(23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(5));
+      tft.drawPixel(i*2+(64*chx),  (23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(5));
+      tft.drawPixel(i*2+(64*chx),  (31-(vol))+(32*chy), gethaco3Col(5));
+      
+    }
 
-          tft.drawPixel(i*2+(64*chx),  (23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(ins+4));
-          tft.drawPixel(i*2+(64*chx),  (31-(vol))+(32*chy), gethaco3Col(3));
-        }
+    //現在の音データ表示
+    for(int i = 0; i<32; i++)//32音書き換える
+    {
+      uint8_t bufNo = patternNo%2;
+      uint8_t efn = channels->notedata[chx*4+chy][i+bufNo*32].effectNo;
+      uint8_t ins = channels->notedata[chx*4+chy][i+bufNo*32].instrument;
+      uint8_t vol = channels->notedata[chx*4+chy][i+bufNo*32].volume;
+      uint8_t oct = channels->notedata[chx*4+chy][i+bufNo*32].octave;
+      uint8_t pit = channels->notedata[chx*4+chy][i+bufNo*32].pitch;
+
+      if(tick == i){
+        tft.drawPixel(i*2+(64*chx),  (23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(10));
+        tft.drawPixel(i*2+(64*chx),  (31-(vol))+(32*chy), gethaco3Col(10));
+      }else{
+        if(efn!=0)
+        tft.drawPixel(i*2+(64*chx)+1,(23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(efn+8));
+
+        tft.drawPixel(i*2+(64*chx),  (23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(ins+4));
+        tft.drawPixel(i*2+(64*chx),  (31-(vol))+(32*chy), gethaco3Col(3));
       }
+    }
       
     }
   }
@@ -1350,13 +1370,80 @@ fr.close();
   return true;
 }
 
-bool readTones(uint8_t _patternNo)
-{
-  // uint8_t addTones[8];
-  // String line;
-  // int j = 0;
-  // uint8_t patternID = 0;
 
+// bool readTones(uint8_t _patternNo)//行32列9のデータ
+// {
+//   // トーンファイルを読み込む
+//   File fr;
+//   for (int chno = 0; chno < CHANNEL_NUM; chno++)
+//     {
+//     uint8_t addTones[32];
+//     String line;
+//     int j = 0;
+//     uint8_t patternID = 0;
+    
+//     patternID = channels->getPatternID( _patternNo+1, chno);
+//     // File fr = SPIFFS.open("/init/sound/pattern/"+String(patternID+buffAreaNo)+".csv", "r");
+//     fr = SPIFFS.open("/init/sound/pattern/"+String(patternID)+".csv", "r");
+//     if (!fr)
+//     {
+//       Serial.println("Failed to open tones.csv");
+//       return true;//とりあえず進む
+//     }
+//     while (fr.available())
+//     {
+//       line = fr.readStringUntil('\n');
+//       // line.trim(); // 空白を削除
+//       if (!line.isEmpty())
+//       {
+//         int commaIndex = line.indexOf(',');
+//         if (commaIndex != -1)
+//         {
+//           String val = line.substring(0, commaIndex);
+
+//           for (int i = 0; i < 32; i++)
+//           {
+//             int nextCommaIndex = line.indexOf(',', commaIndex + 1);
+//             if (nextCommaIndex != -1)
+//             {
+//               val = line.substring(commaIndex + 1, nextCommaIndex);
+//               addTones[i] = val.toInt();
+//               commaIndex = nextCommaIndex;
+
+//               uint8_t bufNo = (_patternNo+1)%2;
+//               if(j==0)channels->notedata[chno][i+bufNo*32].onoffF = addTones[i];
+//               else if(j==1)channels->notedata[chno][i+bufNo*32].loopStart = addTones[i];
+//               else if(j==2)channels->notedata[chno][i+bufNo*32].loopEnd = addTones[i];
+//               else if(j==3)channels->notedata[chno][i+bufNo*32].instrument = addTones[i];//pitch
+//               else if(j==4)channels->notedata[chno][i+bufNo*32].pitch = addTones[i];
+//               else if(j==5){
+//                 channels->notedata[chno][i+bufNo*32].octave = addTones[i];
+//                 channels->notedata[chno][i+bufNo*32].hz = channels->calculateFrequency(
+//                   channels->notedata[chno][i+bufNo*32].pitch, 
+//                   channels->notedata[chno][i+bufNo*32].octave);
+//               }
+//               else if(j==6)channels->notedata[chno][i+bufNo*32].sfxno = addTones[i];
+//               else if(j==7)channels->notedata[chno][i+bufNo*32].volume = addTones[i];
+//               else if(j==8)channels->notedata[chno][i+bufNo*32].effectNo = addTones[i];
+//             }
+            
+//           }
+//           j++;
+//         }
+//       }
+//     }
+    
+//   }
+//   fr.close();
+
+//   //すべてが終わったらtrueを返す
+//   return true;
+// }
+
+
+
+bool readTones(uint8_t _patternNo)//行9列32のデータ
+{
   // トーンファイルを読み込む
   File fr;
   for (int chno = 0; chno < CHANNEL_NUM; chno++)
@@ -1617,11 +1704,11 @@ void loop()
 
   if (M5Cardputer.Keyboard.isPressed()) {
     //ボタンが押されているときだけtickがカウントされる
-    if(btnptick <= 15){
+    if(btnptick <= 8){
       if(btnptick==0){btnpF = true;}//最初の0だけtrue
       else{btnpF = false;pressedBtnID=-1;}
     }else{
-      if(btnptick%4 == 0){
+      if(btnptick%3 == 0){
         // Serial.println("定期的にtrue");
         btnpF = true;
       }else{
