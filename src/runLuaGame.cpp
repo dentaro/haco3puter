@@ -1060,7 +1060,7 @@ bool readRowFromBinary2(const char *filename) {
 
 int runLuaGame::l_map(lua_State* L){
   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
-int mx = lua_tointeger(L, 1);
+  int mx = lua_tointeger(L, 1);
   int my = lua_tointeger(L, 2);
   int roix = lua_tointeger(L, 3);
   int roiy = lua_tointeger(L, 4);
@@ -1084,7 +1084,20 @@ int mx = lua_tointeger(L, 1);
           
             int sx = ((sprno-1)%spr8numX); //0~7
             int sy = ((sprno-1)/spr8numY); //整数の割り算は自動で切り捨てされる
-            sprite64.pushSprite(&sprite88_roi, -8*(sx), -8*(sy));//128*128のpngデータを指定位置までずらすsprite64のスプライトデータ8*8で切り抜く
+            // sprite64.pushSprite(&sprite88_roi, -8*(sx), -8*(sy));//128*128のpngデータを指定位置までずらすsprite64のスプライトデータ8*8で切り抜く
+
+          for (int y = 0; y < 8; y++) {
+            for (int x = 0; x < 8; x++) {
+              uint8_t bit4;
+              int sprpos;
+              sprpos = (sy * 8 * PNG_SPRITE_WIDTH + sx * 8 + y * PNG_SPRITE_WIDTH + x) / 2;
+              bit4 = sprite64cnos_vector[sprpos];
+              if (x % 2 == 1) bit4 = (bit4 & 0b00001111);
+              if (x % 2 == 0) bit4 = (bit4 >> 4);
+              sprite88_roi.drawPixel(x, y, gethaco3Col(bit4));
+            }
+          }
+
             sprite88_roi.pushSprite(&tft, roix+n*8, roiy+m*8);//4ずれない
             // sprite88_roi.pushRotateZoom(&tft, roix+n*8+4, roiy+m*8+4, 0, 1, 1, TFT_BLACK);//なぜか４を足さないとずれる要修正
       }
