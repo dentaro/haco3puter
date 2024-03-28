@@ -1,1 +1,1 @@
-/star/main.lua,0,
+/star/main.lua,3,

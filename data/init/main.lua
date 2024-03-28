@@ -7,6 +7,8 @@ scroll = 0
 tabCursor = 0
 showmax = 8 --ファイルの最大表示数0~
 lineheight = 13
+
+sndsw = false
 function setup()
 
 end
@@ -97,7 +99,7 @@ function drawFile()
   end
 end
 
-utilMenu = {"reload", "wifi on", "self wifi on", "reboot", "tone on", "tone off","chat"}
+utilMenu = {"reload", "wifi on", "self wifi on", "reboot", "tone sw", "snd edit","chat"}
 
 function drawUtil()
   drawDisableTab(0,1,4)
@@ -145,15 +147,17 @@ function drawUtil()
     elseif cursor == 3 then
       reboot()
     elseif cursor == 4 then
-     --  tone(0, 523)
-     --  tone(1, 659)
-      -- tone(2, 784)
+      if sndsw == true then
+        snd(0,0)
+        sndsw = false
+      elseif sndsw == false then
+        snd(0,64)
+        sndsw = true
+      end
     elseif cursor == 5 then
-      -- tone(0, 0)
-      -- tone(1, 0)
-      -- tone(2, 0)
+      appmode("/init/main.lua", 3)--サウンドエディタモードで起動
     elseif cursor == 6 then
-      appmode("/chat/main.lua", 2)--チャットモードで起動
+      -- appmode("/chat/main.lua", 2)--チャットモードで起動
     end
   end
 end
