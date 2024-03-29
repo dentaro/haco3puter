@@ -1,0 +1,51 @@
+|--data
+|  |
+|  |--app
+|  |  |- game.json
+|  |  |- main.lua
+|  |
+|  |--init
+|     |- game.json -->for HOME app
+|     |- main.lua  -->for HOME app
+|     |- initspr.png  -->default sprites file
+|     |
+|     |--map
+|     |  |- 0.png -->for function map()
+|     |  |- 1.png
+|     |
+|     |--param
+|     |  |--map
+|     |  |  |- w.bin -->for function rmap()
+|     |  |  
+|     |  |--pal
+|     |  |  |- 0.txt -->color pallets for function pal()
+|     |  |
+|     |  |- editor.txt -->for editor
+|     |  |- mapsprnos -->for rmap()
+|     |  |- openconfig.txt -->boot config file
+|     |  |- sprbits.txt -->for functions fget(),
+|     |
+|     |--sound
+|        |--pattern
+|        |  |- 0.csv -->0~32 tones  for function snd()
+|        |- patterns.csv -->8ch 0~64 music patterns for function snd()
+|
+|--src
+|  |- Channel.cpp
+|  |- Channel.hpp
+|  |- Editor.cpp
+|  |- Editor.h
+|  |- Tunes.cpp
+|  |- Tunes.h
+|  |- baseGame.h
+|  |- main.cpp
+|  |- runLuaGame.cpp
+|  |- runLuaGame.h
+|  
+|--lib
+|  |--M5Unified
+|  |--M5Cardputer
+|  |--M5GFX_DentaroUI
+|  |--lua-5.3
+|
+|- platformio.ini
