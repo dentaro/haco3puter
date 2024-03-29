@@ -28,6 +28,7 @@
 |     |--sound
 |        |--pattern
 |        |  |- 0.csv -->0~32 tones  for function snd()
+|        |
 |        |- patterns.csv -->8ch 0~64 music patterns for function snd()
 |
 |--src
