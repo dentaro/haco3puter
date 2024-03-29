@@ -190,6 +190,7 @@ struct CameraObj {
     static int l_fillp(lua_State* L);
     static int l_oval(lua_State* L);
     static int l_ovalfill(lua_State* L);
+    static int l_fps(lua_State* L);
     static int l_fillpoly(lua_State* L);
     static int l_drawbox(lua_State* L);
     static int l_drawboxp(lua_State* L);

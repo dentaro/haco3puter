@@ -381,6 +381,8 @@ int keychar;//キーボードから毎フレーム入ってくる文字
 //https://qiita.com/norippy_i/items/0ed46e06427a1d574625
 // #include <driver/adc.h>//アナログボタンはこのヘッダファイルを忘れないように！！
 
+int fps=60;//デフォルト
+
 using namespace std;
 
 #define MAX_CHAR 512
@@ -1686,10 +1688,25 @@ void setup()
 }
 
 bool btnpF = false;
+bool prebtnpF = false;
 int btnptick = 0;
+int prebtnptick = 0;
+int btnpms = 0;
+
+
+unsigned long startTime = millis();
 
 void loop()
 {
+
+    // 現在の時間を取得する
+  uint32_t currentTime = millis();
+  // 前フレーム処理後からの経過時間を計算する
+  uint32_t elapsedTime = currentTime - startTime;
+  // 前フレームからの経過時間を計算する
+  uint32_t remainTime = (currentTime - preTime);
+  preTime = currentTime;
+
   M5Cardputer.update();
 
   if (M5Cardputer.Keyboard.isPressed() == 0) {
@@ -1700,24 +1717,34 @@ void loop()
 
   if (M5Cardputer.Keyboard.isChange()) {
     btnptick = 0;
+    btnpms = 0;
   }
 
-  if (M5Cardputer.Keyboard.isPressed()) {
+  if (M5Cardputer.Keyboard.isPressed()) 
+  {
     //ボタンが押されているときだけtickがカウントされる
-    if(btnptick <= 8){
-      if(btnptick==0){btnpF = true;}//最初の0だけtrue
+    
+    if(btnpms <= 250){
+
+      if(btnpms==0){btnpF = true; btnptick++;}//最初の0だけtrue
       else{btnpF = false;pressedBtnID=-1;}
+
     }else{
-      if(btnptick%3 == 0){
+      
+      if(btnpms%500 >= 250){
         // Serial.println("定期的にtrue");
         btnpF = true;
       }else{
         btnpF = false;
       }
+
+      if(btnpF!= prebtnpF)btnptick++;
+
     }
-    btnptick++;
+
+    btnpms += elapsedTime;
     
-    if (btnpF) {
+    if (btnptick!=prebtnptick) {
     
       Keyboard_Class::KeysState status = M5Cardputer.Keyboard.keysState();//キー状態を取得しておく
 
@@ -1857,6 +1884,8 @@ void loop()
         editor.editorProcessKeypress(keychar, SPIFFS);
       }      
     }
+    prebtnpF = btnpF;
+    prebtnptick = btnptick;
   }
 
 
@@ -1884,9 +1913,10 @@ void loop()
   //   }
   // }
 
-  uint32_t now = millis();
-  uint32_t remainTime= (now - preTime);
-  preTime = now;
+
+
+    // 経過時間が1/30秒以上経過した場合
+if (elapsedTime >= 1000/fps||fps==-1) {
 
   if(isEditMode == TFT_SOUNDEDIT_MODE){
     if (btnpF) {
@@ -1998,7 +2028,7 @@ void loop()
     }
 
     // ui.showTouchEventInfo( tft, 0, 100 );//タッチイベントを視覚化する
-    // ui.showInfo( tft, 0, 100+8 );//ボタン情報、フレームレート情報などを表示します。
+    ui.showInfo( M5Cardputer.Display, 200, 120 );//ボタン情報、フレームレート情報などを表示します。
 
     if(enemyF){
 
@@ -2078,7 +2108,6 @@ void loop()
     }
 
     if(pressedBtnID == 9){//(|)
-    // appfileName = 
       editor.editorSave(SPIFFS);//SPIFFSに保存
       delay(100);//ちょっと待つ
       reboot(appfileName, TFT_RUN_MODE);//現状rebootしないと初期化が完全にできない
@@ -2088,19 +2117,11 @@ void loop()
 
   }
 
-  // int x      = rand() % M5Cardputer.Display.width();
-  // int y      = rand() % M5Cardputer.Display.height();
-  // int r      = (M5Cardputer.Display.width() >> 4) + 2;
-  // uint16_t c = rand();
-  // M5Cardputer.Display.fillCircle(x, y, r, c);
-  // draw_function(&M5Cardputer.Display);
+  startTime = currentTime;
+}
 
   frame++;
   if(frame > 18446744073709551615)frame = 0;
   delay(1);
-    
-     //最終出力
-    // tft.setPivot(0, 0);
-    // tft.pushRotateZoom(&M5Cardputer.Display, 40, 3, 0, 1, 1);
   
 }

@@ -1607,10 +1607,14 @@ int runLuaGame::l_oval(lua_State* L){
   return 0;
 }
 
-// int runLuaGame::l_fps(lua_State* L){
-//   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
-//   fps = lua_tointeger(L, 1);
-// }
+extern bool fpsSetF;
+extern int fps;
+
+int runLuaGame::l_fps(lua_State* L){
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  fps = lua_tointeger(L, 1);
+  return 0;
+}
 
 int runLuaGame::l_fillp(lua_State* L){
   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
@@ -2247,11 +2251,11 @@ int runLuaGame::l_btnp(lua_State* L)
   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
   int n = lua_tointeger(L, 1);
 
-  if(buttonState[n] <= 8){
+  if(buttonState[n] <= 4){
     if(buttonState[n]==1){lua_pushboolean(L, true);}//最初の１だけtrue
     else{lua_pushboolean(L, false);}
   }else{
-    if(buttonState[n]%3 == 0){
+    if(buttonState[n]%2 == 0){
       // Serial.println("定期的にtrue");
       lua_pushboolean(L, true);
     }else{
@@ -3131,6 +3135,10 @@ luaL_openlibs(L);
   lua_pushlightuserdata(L, this);
   lua_pushcclosure(L, l_ovalfill, 1);
   lua_setglobal(L, "ovalfill");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_fps, 1);
+  lua_setglobal(L, "fps");
 
   lua_pushlightuserdata(L, this);
   lua_pushcclosure(L, l_fillpoly, 1);
