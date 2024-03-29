@@ -95,7 +95,6 @@ void Channel::setupHz(){
     }
 }
 
-
 void Channel::setTones(uint8_t onoffF, uint8_t loopStart, uint8_t loopEnd, uint8_t instrument, uint8_t pitch, uint8_t octave, uint8_t sfxno, 
 uint8_t volume, uint8_t effectNo, uint8_t tickNo, uint8_t _chno, uint8_t _patternNo) {
 uint8_t bufNo = _patternNo%2;

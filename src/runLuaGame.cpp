@@ -348,11 +348,19 @@ int runLuaGame::l_fset(lua_State* L){
   return 0;
 }
 
+extern uint8_t musicNo;
+// extern uint8_t musicSpeed;
+extern uint8_t tickTime;//100がデフォルト
 
-int runLuaGame::l_snd(lua_State* L){
+int runLuaGame::l_music(lua_State* L){
   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
-  int soundNo = lua_tointeger(L, 1);//今のところ使ってない
+  musicNo = lua_tointeger(L, 1);//今のところ使ってない
   masterVol = lua_tointeger(L, 2);
+  int musicSpeed = lua_tointeger(L, 3);
+
+  tickTime = 100;//まずデフォルト値を入れておく
+
+  if(musicSpeed!=NULL){tickTime = musicSpeed;}
 
   return 0;
 }
@@ -2985,8 +2993,8 @@ luaL_openlibs(L);
   lua_setglobal(L, "fset");
 
   lua_pushlightuserdata(L, this);
-  lua_pushcclosure(L, l_snd, 1);
-  lua_setglobal(L, "snd");
+  lua_pushcclosure(L, l_music, 1);
+  lua_setglobal(L, "music");
 
   lua_pushlightuserdata(L, this);
   lua_pushcclosure(L, l_sfx, 1);

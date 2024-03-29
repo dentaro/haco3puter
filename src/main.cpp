@@ -5,30 +5,18 @@ using namespace std;
 #include <stdio.h>
 #include <sstream>
 #include <cmath>
-
 #include "baseGame.h"
-
-#include <string> // 必要に応じて追加
 #include <chrono>
-
 #include <time.h>
 #include <fstream>
-#include <iostream>
-#include <string>
 #include "runLuaGame.h"
 #include <sstream>
-
 #include <Arduino.h>
 #include <FS.h>
 #include <SD.h>
-
-// #include "SPIFFS.h"
 #include <SPIFFS.h>
 #include <M5Unified.h>
-// #include "Tunes.h"
 #include "Editor.h"
-// #include <PS2Keyboard.h>
-// #include "Speaker_Class.hpp"
 #include "Channel.hpp"
 // #include <esp_now.h>
 // #include <WiFi.h>
@@ -36,73 +24,12 @@ using namespace std;
 #include <map>
 #include "M5Cardputer.h"
 
-
-
-static void tone_up(bool holding)
-{
-  static int tone_hz;
-  if (!holding) { tone_hz = 100; }
-  M5.Speaker.tone(++tone_hz, 1000, 1);
-}
-
-static void m_volume_up(bool)
-{
-  int v = M5.Speaker.getVolume() + 1;
-  if (v < 256) { M5.Speaker.setVolume(v); }
-}
-
-static void m_volume_down(bool)
-{
-  int v = M5.Speaker.getVolume() - 1;
-  if (v >= 0) { M5.Speaker.setVolume(v); }
-}
-
-static void c_volume_up(bool)
-{
-  int v = M5.Speaker.getChannelVolume(0) + 1;
-  if (v < 256) { M5.Speaker.setChannelVolume(0, v); }
-}
-
-static void c_volume_down(bool)
-{
-  int v = M5.Speaker.getChannelVolume(0) - 1;
-  if (v >= 0) { M5.Speaker.setChannelVolume(0, v); }
-}
-
-void soundsetup(void)
-{
-
-  { /// I2S Custom configurations are available if you desire.
-    auto spk_cfg = M5.Speaker.config();
-
-    if (spk_cfg.use_dac || spk_cfg.buzzer)
-    {
-    /// Increasing the sample_rate will improve the sound quality instead of increasing the CPU load.
-      spk_cfg.sample_rate = 192000; // default:64000 (64kHz)  e.g. 48000 , 50000 , 80000 , 96000 , 100000 , 128000 , 144000 , 192000 , 200000
-    }
-    M5.Speaker.config(spk_cfg);
-  }
-  M5.Speaker.begin();
-
-  M5.Speaker.tone(2000, 100);
-
-  M5.delay(100);
-
-  /// play 1000Hz tone sound, 100 msec. 
-  M5.Speaker.tone(1000, 100);
-
-  M5.delay(100);
-  // M5.Speaker.setAllChannelVolume(0);
-  M5.Speaker.setVolume(64);
-
-  while (M5.Speaker.isPlaying()) { M5.delay(1); } // Wait for the output to finish.
-
-}
-
 #define SOUND_OFF_STATE 0
 #define SOUND_ON_STATE  1
 
 int8_t soundState = SOUND_OFF_STATE;
+uint8_t musicNo = 255;
+// uint8_t musicSpeed = 64;
 Channel* channels = new Channel();
 // // //音関連
 uint8_t buffAreaNo = 0;
@@ -114,7 +41,6 @@ uint8_t targetChannelNo = 0;//描画編集する効果音番号を設定（sfx(n
 uint8_t tickTime = 100;//スピードがかえられる
 uint8_t tickSpeed = 5;//連動してない
 uint8_t patternNo = 0;//0~63
-
 
 TaskHandle_t taskHandle[2];
 SemaphoreHandle_t syncSemaphore;
@@ -305,10 +231,9 @@ std::vector<std::array<uint16_t, 1>> bsParamInt16t;
 
 #define PS2_KEYMAP_SIZE 136
 
-// Speaker_Class* speaker;
-
 uint64_t frame = 0;
 
+bool sndbufferedF = false;
 int isEditMode;
 bool firstBootF = true;
 bool difffileF = false;//前と違うファイルを開こうとしたときに立つフラグ
@@ -484,9 +409,8 @@ char buf[MAX_CHAR];
 int mode = 0;//記号モード //0はrun 1はexit
 // int gameState = 0;
 String appNameStr = "init";
-int soundNo = -1;
+int8_t soundNo = -1;
 float soundSpeed = 1.0;
-int musicNo = -1;
 bool musicflag = false;
 bool sfxflag = false;
 bool toneflag = false;
@@ -1319,145 +1243,85 @@ uint8_t addTones[8];
 String line;
 int j = 0;
 
-// パターンファイルを読み込む
-File fr = SPIFFS.open("/init/sound/patterns.csv", "r");
-if (!fr)
-{
-  Serial.println("Failed to open patterns.csv");
-  return true; // とりあえず進む
-}
+String filePath = "/init/sound/patterns/" + String(musicNo) + ".csv";
 
-// j = 0;
-while (fr.available()) // 64行だけ読み込む
-{
-  line = fr.readStringUntil('\n'); // 64行文のパターン（小節）があります
-  line.trim();                      // 空白を削除
+// ファイルが存在するかを確認する
+  if (SPIFFS.exists(filePath)) {
+  }else {
+      // ファイルが存在しない場合の処理
+      Serial.println("File does not exist");
+      musicNo = 255;
+  }
+  // ファイルが存在する場合は開く
+  File fr = SPIFFS.open(filePath, "r");
 
-  if (!line.isEmpty())
+  if (!fr)// ファイルのオープンに失敗した場合の処理
   {
-    int commaIndex = line.indexOf(',');
-    if (commaIndex != -1)
+    Serial.println("Failed to open patterns.csv");
+    return true; // とりあえず進む
+  }
+
+  // j = 0;
+  while (fr.available()) // 64行だけ読み込む
+  {
+    line = fr.readStringUntil('\n'); // 64行文のパターン（小節）があります
+    line.trim();                      // 空白を削除
+
+    if (!line.isEmpty())
     {
-      String val = line.substring(0, commaIndex);
-      addTones[0] = val.toInt();
-
-      for (int i = 1; i < 8; i++)
+      int commaIndex = line.indexOf(',');
+      if (commaIndex != -1)
       {
-        int nextCommaIndex = line.indexOf(',', commaIndex + 1);
-        if (nextCommaIndex != -1)
-        {
-          val = line.substring(commaIndex + 1, nextCommaIndex);
-          addTones[i] = val.toInt();
-          commaIndex = nextCommaIndex;
-        }
-        else
-        {
-          // Handle the case where there is no trailing comma
-          val = line.substring(commaIndex + 1);
-          addTones[i] = val.toInt();
-          break; // Exit the loop since we reached the end of the line
-        }
-      }
+        String val = line.substring(0, commaIndex);
+        addTones[0] = val.toInt();
 
-      for(uint8_t n=0; n<CHANNEL_NUM; n++){
-        channels->setPatterns(j, n, addTones[n]);
+        for (int i = 1; i < 8; i++)
+        {
+          int nextCommaIndex = line.indexOf(',', commaIndex + 1);
+          if (nextCommaIndex != -1)
+          {
+            val = line.substring(commaIndex + 1, nextCommaIndex);
+            addTones[i] = val.toInt();
+            commaIndex = nextCommaIndex;
+          }
+          else
+          {
+            // Handle the case where there is no trailing comma
+            val = line.substring(commaIndex + 1);
+            addTones[i] = val.toInt();
+            break; // Exit the loop since we reached the end of the line
+          }
+        }
+
+        for(uint8_t n=0; n<CHANNEL_NUM; n++){
+          channels->setPatterns(j, n, addTones[n]);
+        }
+        
+        j++;
       }
-      
-      j++;
     }
   }
-}
-fr.close();
+  fr.close();
+  
   //すべてが終わったらtrueを返す
   return true;
 }
 
 
-// bool readTones(uint8_t _patternNo)//行32列9のデータ
-// {
-//   // トーンファイルを読み込む
-//   File fr;
-//   for (int chno = 0; chno < CHANNEL_NUM; chno++)
-//     {
-//     uint8_t addTones[32];
-//     String line;
-//     int j = 0;
-//     uint8_t patternID = 0;
-    
-//     patternID = channels->getPatternID( _patternNo+1, chno);
-//     // File fr = SPIFFS.open("/init/sound/pattern/"+String(patternID+buffAreaNo)+".csv", "r");
-//     fr = SPIFFS.open("/init/sound/pattern/"+String(patternID)+".csv", "r");
-//     if (!fr)
-//     {
-//       Serial.println("Failed to open tones.csv");
-//       return true;//とりあえず進む
-//     }
-//     while (fr.available())
-//     {
-//       line = fr.readStringUntil('\n');
-//       // line.trim(); // 空白を削除
-//       if (!line.isEmpty())
-//       {
-//         int commaIndex = line.indexOf(',');
-//         if (commaIndex != -1)
-//         {
-//           String val = line.substring(0, commaIndex);
-
-//           for (int i = 0; i < 32; i++)
-//           {
-//             int nextCommaIndex = line.indexOf(',', commaIndex + 1);
-//             if (nextCommaIndex != -1)
-//             {
-//               val = line.substring(commaIndex + 1, nextCommaIndex);
-//               addTones[i] = val.toInt();
-//               commaIndex = nextCommaIndex;
-
-//               uint8_t bufNo = (_patternNo+1)%2;
-//               if(j==0)channels->notedata[chno][i+bufNo*32].onoffF = addTones[i];
-//               else if(j==1)channels->notedata[chno][i+bufNo*32].loopStart = addTones[i];
-//               else if(j==2)channels->notedata[chno][i+bufNo*32].loopEnd = addTones[i];
-//               else if(j==3)channels->notedata[chno][i+bufNo*32].instrument = addTones[i];//pitch
-//               else if(j==4)channels->notedata[chno][i+bufNo*32].pitch = addTones[i];
-//               else if(j==5){
-//                 channels->notedata[chno][i+bufNo*32].octave = addTones[i];
-//                 channels->notedata[chno][i+bufNo*32].hz = channels->calculateFrequency(
-//                   channels->notedata[chno][i+bufNo*32].pitch, 
-//                   channels->notedata[chno][i+bufNo*32].octave);
-//               }
-//               else if(j==6)channels->notedata[chno][i+bufNo*32].sfxno = addTones[i];
-//               else if(j==7)channels->notedata[chno][i+bufNo*32].volume = addTones[i];
-//               else if(j==8)channels->notedata[chno][i+bufNo*32].effectNo = addTones[i];
-//             }
-            
-//           }
-//           j++;
-//         }
-//       }
-//     }
-    
-//   }
-//   fr.close();
-
-//   //すべてが終わったらtrueを返す
-//   return true;
-// }
-
-
-
-bool readTones(uint8_t _patternNo)//行9列32のデータ
+bool readTones(uint8_t _patternNo)//行32列9のデータ
 {
   // トーンファイルを読み込む
   File fr;
   for (int chno = 0; chno < CHANNEL_NUM; chno++)
     {
-    uint8_t addTones[8];
+    uint8_t addTones[32];
     String line;
     int j = 0;
     uint8_t patternID = 0;
     
     patternID = channels->getPatternID( _patternNo, chno);
-    // File fr = SPIFFS.open("/init/sound/pattern/"+String(patternID+buffAreaNo)+".csv", "r");
-    fr = SPIFFS.open("/init/sound/pattern/"+String(patternID)+".csv", "r");
+
+    fr = SPIFFS.open("/init/sound/tones/"+String(patternID)+".csv", "r");
     if (!fr)
     {
       Serial.println("Failed to open tones.csv");
@@ -1474,7 +1338,7 @@ bool readTones(uint8_t _patternNo)//行9列32のデータ
         {
           String val = line.substring(0, commaIndex);
 
-          for (int i = 0; i < 8; i++)
+          for (int i = 0; i < 32; i++)
           {
             int nextCommaIndex = line.indexOf(',', commaIndex + 1);
             if (nextCommaIndex != -1)
@@ -1482,15 +1346,25 @@ bool readTones(uint8_t _patternNo)//行9列32のデータ
               val = line.substring(commaIndex + 1, nextCommaIndex);
               addTones[i] = val.toInt();
               commaIndex = nextCommaIndex;
-            }
-          }
 
-          channels->setTones(
-              1,
-              addTones[0], addTones[1], //loopStart, loopEnd,
-              addTones[2], addTones[3],//instrument, pitch,
-              addTones[4], addTones[5],//octave, sfxno, 
-              addTones[6], addTones[7], j, chno, _patternNo+1);//volume, effectNo,tickNo,chno
+              uint8_t bufNo = (_patternNo+1)%2;
+              if(j==0)channels->notedata[chno][i+bufNo*32].onoffF = addTones[i];
+              else if(j==1)channels->notedata[chno][i+bufNo*32].loopStart = addTones[i];
+              else if(j==2)channels->notedata[chno][i+bufNo*32].loopEnd = addTones[i];
+              else if(j==3)channels->notedata[chno][i+bufNo*32].instrument = addTones[i];//pitch
+              else if(j==4)channels->notedata[chno][i+bufNo*32].pitch = addTones[i];
+              else if(j==5){
+                channels->notedata[chno][i+bufNo*32].octave = addTones[i];
+                channels->notedata[chno][i+bufNo*32].hz = channels->calculateFrequency(
+                  channels->notedata[chno][i+bufNo*32].pitch, 
+                  channels->notedata[chno][i+bufNo*32].octave);
+              }
+              else if(j==6)channels->notedata[chno][i+bufNo*32].sfxno = addTones[i];
+              else if(j==7)channels->notedata[chno][i+bufNo*32].volume = addTones[i];
+              else if(j==8)channels->notedata[chno][i+bufNo*32].effectNo = addTones[i];
+            }
+            
+          }
           j++;
         }
       }
@@ -1503,13 +1377,84 @@ bool readTones(uint8_t _patternNo)//行9列32のデータ
   return true;
 }
 
+// bool readTones(uint8_t _patternNo)//行9列32のデータ
+// {
+//   // トーンファイルを読み込む
+//   File fr;
+//   for (int chno = 0; chno < CHANNEL_NUM; chno++)
+//     {
+//     uint8_t addTones[8];
+//     String line;
+//     int j = 0;
+//     uint8_t patternID = 0;
+    
+//     patternID = channels->getPatternID( _patternNo, chno);
+//     // File fr = SPIFFS.open("/init/sound/tones/"+String(patternID+buffAreaNo)+".csv", "r");
+//     String filePath = "/init/sound/tones/"+String(patternID)+".csv";
+
+//     if (SPIFFS.exists(filePath)) 
+//     {
+//       }else {
+//       // ファイルが存在しない場合の処理
+//       Serial.println("File does not exist");
+//       musicNo = 255;
+//     }
+//       fr = SPIFFS.open(filePath, "r");
+//       if (!fr)
+//       {
+//         Serial.println("Failed to open tones.csv");
+//         return true;//とりあえず進む
+//       }
+
+//       while (fr.available())
+//       {
+//         line = fr.readStringUntil('\n');
+//         // line.trim(); // 空白を削除
+//         if (!line.isEmpty())
+//         {
+//           int commaIndex = line.indexOf(',');
+//           if (commaIndex != -1)
+//           {
+//             String val = line.substring(0, commaIndex);
+
+//             for (int i = 0; i < 8; i++)
+//             {
+//               int nextCommaIndex = line.indexOf(',', commaIndex + 1);
+//               if (nextCommaIndex != -1)
+//               {
+//                 val = line.substring(commaIndex + 1, nextCommaIndex);
+//                 addTones[i] = val.toInt();
+//                 commaIndex = nextCommaIndex;
+//               }
+//             }
+
+//             channels->setTones(
+//                 1,
+//                 addTones[0], addTones[1], //loopStart, loopEnd,
+//                 addTones[2], addTones[3],//instrument, pitch,
+//                 addTones[4], addTones[5],//octave, sfxno, 
+//                 addTones[6], addTones[7], j, chno, _patternNo+1);//volume, effectNo,tickNo,chno
+//             j++;
+//           }
+//         }
+//       }
+      
+    
+//     fr.close();
+    
+//   }
+//   //すべてが終わったらtrueを返す
+//   return true;
+// }
 
 void createChTask(void *pvParameters) {
     while (true) {
       while (!createChannels()) {
           delay(10);
       }
-      readTones(patternNo);
+
+      sndbufferedF = readTones(patternNo);
+
       xSemaphoreGive(syncSemaphore);
       delay(10);
     }
@@ -1517,31 +1462,27 @@ void createChTask(void *pvParameters) {
 
 void musicTask(void *pvParameters) {
   while (true) {
-      // 何らかの条件が満たされるまで待機
-      
-    if (xSemaphoreTake(syncSemaphore, portMAX_DELAY)) {
+    // 何らかの条件が満たされるまで待機
+    if(sndbufferedF){//次の音がバッファされたら
+      if (xSemaphoreTake(syncSemaphore, portMAX_DELAY)) {
       // 同期が取れたらここに入る
       channels->begin();
-      // if(soundState == SOUND_ON_STATE){
-        // channels->setVolume(masterVol); // 0-255
-        M5.Speaker.setVolume(masterVol);// 0-255
+      channels->setVolume(masterVol); // 0-255
 
-        // M5.Speaker.setAllChannelVolume(64);
+      channels->note(4, tick, patternNo);
+      channels->note(5, tick, patternNo);
+      channels->note(6, tick, patternNo);
+      channels->note(7, tick, patternNo);
 
-        channels->note(4, tick, patternNo);
-        channels->note(5, tick, patternNo);
-        channels->note(6, tick, patternNo);
-        channels->note(7, tick, patternNo);
+      channels->note(0, tick, patternNo);
+      channels->note(1, tick, patternNo);
+      channels->note(2, tick, patternNo);
+      channels->note(3, tick, patternNo);        
 
-        channels->note(0, tick, patternNo);
-        channels->note(1, tick, patternNo);
-        channels->note(2, tick, patternNo);
-        channels->note(3, tick, patternNo);
-
-        
-      // }
       channels->stop();
+      
       xSemaphoreGive(syncSemaphore);
+      }
     }
 
     tick++;
@@ -1566,14 +1507,13 @@ void musicTask(void *pvParameters) {
 void setup()
 {
   Serial.begin(115200);
-
   auto cfg = M5.config();
   // M5.begin(cfg);
   M5Cardputer.begin(cfg);
   SPIFFS.begin();
   ui.begin( M5Cardputer.Display, 16, 1);
 
-  soundsetup();
+  
 
   // 同期用セマフォの作成
   syncSemaphore = xSemaphoreCreateBinary();
@@ -1601,15 +1541,20 @@ void setup()
     1 // タスクを実行するコア（0または1）
   );
 
+  
+
   // createChannelsが完了するまでmusicTaskをブロック
-    while (!createChannels()) {
-        delay(1);
-    }
-    // buffAreaNo = (patternNo+1)%2;//一つ先のパターンを読み込んでおく
-    // readTones(patternNo+1);
-    readTones(patternNo);
-    // //同期用セマフォを解放
-    xSemaphoreGive(syncSemaphore);
+    // while (!createChannels()) {
+    //     delay(1);
+    // }
+    
+
+    // sndbufferedF = readTones(patternNo);
+
+    // // //同期用セマフォを解放
+    // xSemaphoreGive(syncSemaphore);
+
+    // soundsetup();
 
   // int textsize = M5Cardputer.Display.height() / 60;
   // if (textsize == 0) {
@@ -2021,6 +1966,7 @@ if (elapsedTime >= 1000/fps||fps==-1) {
       toneflag = false;
       sfxflag = false;
       musicflag = false;
+      fps = 60;
       // txtName = appfileName;
       game = nextGameObject(&appfileName, gameState, mapFileName);//ファイルの種類を判別して適したゲームオブジェクトを生成
       game->init();//resume()（再開処理）を呼び出し、ゲームで利用する関数などを準備
