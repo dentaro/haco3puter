@@ -21,7 +21,7 @@
 |     |  |  |- 0.txt -->color pallets for function pal()
 |     |  |
 |     |  |- editor.txt -->for editor
-|     |  |- mapsprnos -->for rmap()
+|     |  |- mapsprnos.txt -->for rmap()
 |     |  |- openconfig.txt -->boot config file
 |     |  |- sprbits.txt -->for functions fget(),
 |     |
