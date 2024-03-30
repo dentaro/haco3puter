@@ -352,18 +352,69 @@ extern uint8_t musicNo;
 // extern uint8_t musicSpeed;
 extern uint8_t tickTime;//100がデフォルト
 
-int runLuaGame::l_music(lua_State* L){
+extern uint8_t loopStart;
+extern uint8_t loopEnd;
+extern uint8_t looplen;
+extern uint8_t patternNo;
+
+int runLuaGame::l_music(lua_State* L) {
   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
-  musicNo = lua_tointeger(L, 1);//今のところ使ってない
+  musicNo = lua_tointeger(L, 1); // 未使用
   masterVol = lua_tointeger(L, 2);
-  int musicSpeed = lua_tointeger(L, 3);
-
-  tickTime = 100;//まずデフォルト値を入れておく
-
-  if(musicSpeed!=NULL){tickTime = musicSpeed;}
+  int _tickTime = lua_tointeger(L, 3);
+  
+  // Retrieve loop start and end values
+  uint8_t _loopStart = lua_tointeger(L, 4);
+  uint8_t _loopEnd = lua_tointeger(L, 5);
+  
+  // Set default values for loop start and end
+  if (_loopStart == NULL) {
+    _loopStart = 0;
+  }
+  if (_loopEnd == NULL) {
+    _loopEnd = 63;
+  }
+  
+  // Set tickTime to default value if not provided
+  tickTime = (_tickTime != NULL) ? _tickTime : 100;
+  
+  // Set patternNo and loop lengths
+  patternNo = 0;
+  loopStart = _loopStart;
+  loopEnd = _loopEnd;
+  looplen = (loopEnd - loopStart) + 1;
 
   return 0;
 }
+
+// int runLuaGame::l_music(lua_State* L){
+//   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+//   musicNo = lua_tointeger(L, 1);//今のところ使ってない
+//   masterVol = lua_tointeger(L, 2);
+//   int _tickTime = lua_tointeger(L, 3);
+//   uint8_t _loopStart = 0;
+//   uint8_t _loopEnd = 63;
+//   _loopStart = lua_tointeger(L, 4);
+//   _loopEnd   = lua_tointeger(L, 5);
+
+//   tickTime = 100;//まずデフォルト値を入れておく
+//   patternNo = 0;
+
+//   loopStart = _loopStart;
+//   loopEnd = _loopEnd;
+//   looplen = (loopEnd - loopStart)+1;
+
+//   if(_tickTime!=NULL){tickTime = _tickTime;}
+
+//   if(_loopStart!=NULL&&_loopEnd!=NULL){
+//     loopStart = 0;
+//     loopEnd = 63;
+//     looplen = (loopEnd - loopStart)+1;
+//   }
+  
+
+//   return 0;
+// }
 
 int runLuaGame::l_sfx(lua_State* L){
   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));

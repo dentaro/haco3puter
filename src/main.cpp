@@ -27,6 +27,10 @@ using namespace std;
 #define SOUND_OFF_STATE 0
 #define SOUND_ON_STATE  1
 
+uint8_t loopStart = 0;
+uint8_t loopEnd = 63;
+uint8_t looplen = (loopEnd - loopStart)+1;
+
 int8_t soundState = SOUND_OFF_STATE;
 uint8_t musicNo = 255;
 // uint8_t musicSpeed = 64;
@@ -35,7 +39,7 @@ Channel* channels = new Channel();
 uint8_t buffAreaNo = 0;
 uint8_t gEfectNo = 0;
 float effectVal = 0.0f;
-uint8_t tick = 0;
+uint8_t toneNo = 0;
 uint8_t instrument = 0;
 uint8_t targetChannelNo = 0;//描画編集する効果音番号を設定（sfx(n)のnで効果音番号を指定することで作った効果音がなる）
 uint8_t tickTime = 100;//スピードがかえられる
@@ -1086,7 +1090,6 @@ tft.drawLine(128, 39, 160, 39, gethaco3Col(6));
 
 tft.drawLine(128, 49, 160, 49, gethaco3Col(6));
 
-
     tft.setCursor(138,51);
     tft.print("CH");
     tft.print(targetChannelNo);
@@ -1145,7 +1148,7 @@ void controlMusicVisual(){
         //   }
         // }
 
-        if(tick == i){
+        if(toneNo == i){
 
           tft.fillRect(i*4, 92-(pit + (oct-4)*12)*4, 4,4, gethaco3Col(10));
           tft.fillRect(i*4, 124-(vol)*4, 4,4, gethaco3Col(10));
@@ -1170,7 +1173,7 @@ void showMusicVisual(){//操作できないタイプ
       uint8_t oct = channels->notedata[targetChannelNo][i+bufNo*32].octave;
       uint8_t pit = channels->notedata[targetChannelNo][i+bufNo*32].pitch;
 
-      if(tick == i){
+      if(toneNo == i){
         tft.fillRect(i*4, 92-(pit + (oct-4)*12)*4, 4,4, gethaco3Col(10));
         tft.fillRect(i*4, 124-(vol)*4, 4,4, gethaco3Col(10));
       }else{
@@ -1220,7 +1223,7 @@ for(uint8_t chx = 0; chx<2; chx++)
       uint8_t oct = channels->notedata[chx*4+chy][i+bufNo*32].octave;
       uint8_t pit = channels->notedata[chx*4+chy][i+bufNo*32].pitch;
 
-      if(tick == i){
+      if(toneNo == i){
         tft.drawPixel(i*2+(64*chx),  (23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(10));
         tft.drawPixel(i*2+(64*chx),  (31-(vol))+(32*chy), gethaco3Col(10));
       }else{
@@ -1349,19 +1352,20 @@ bool readTones(uint8_t _patternNo)//行32列9のデータ
 
               uint8_t bufNo = (_patternNo+1)%2;
               if(j==0)channels->notedata[chno][i+bufNo*32].onoffF = addTones[i];
-              else if(j==1)channels->notedata[chno][i+bufNo*32].loopStart = addTones[i];
-              else if(j==2)channels->notedata[chno][i+bufNo*32].loopEnd = addTones[i];
-              else if(j==3)channels->notedata[chno][i+bufNo*32].instrument = addTones[i];//pitch
-              else if(j==4)channels->notedata[chno][i+bufNo*32].pitch = addTones[i];
-              else if(j==5){
+              else if(j==1)channels->notedata[chno][i+bufNo*32].instrument = addTones[i];//pitch
+              else if(j==2)channels->notedata[chno][i+bufNo*32].pitch = addTones[i];
+              else if(j==3){
                 channels->notedata[chno][i+bufNo*32].octave = addTones[i];
                 channels->notedata[chno][i+bufNo*32].hz = channels->calculateFrequency(
                   channels->notedata[chno][i+bufNo*32].pitch, 
                   channels->notedata[chno][i+bufNo*32].octave);
               }
-              else if(j==6)channels->notedata[chno][i+bufNo*32].sfxno = addTones[i];
-              else if(j==7)channels->notedata[chno][i+bufNo*32].volume = addTones[i];
-              else if(j==8)channels->notedata[chno][i+bufNo*32].effectNo = addTones[i];
+              else if(j==4)channels->notedata[chno][i+bufNo*32].sfxno = addTones[i];
+              else if(j==5)channels->notedata[chno][i+bufNo*32].volume = addTones[i];
+
+              // channels->notedata[chno][i+bufNo*32].loopStart = loopStart;
+              // channels->notedata[chno][i+bufNo*32].loopEnd = loopEnd;
+              // notedata[chno][i+bufNo*32].effectNo = looplen; 
             }
             
           }
@@ -1460,39 +1464,44 @@ void createChTask(void *pvParameters) {
     }
 }
 
+
 void musicTask(void *pvParameters) {
   while (true) {
+    
     // 何らかの条件が満たされるまで待機
     if(sndbufferedF){//次の音がバッファされたら
       if (xSemaphoreTake(syncSemaphore, portMAX_DELAY)) {
       // 同期が取れたらここに入る
       channels->begin();
       channels->setVolume(masterVol); // 0-255
-
-      channels->note(4, tick, patternNo);
-      channels->note(5, tick, patternNo);
-      channels->note(6, tick, patternNo);
-      channels->note(7, tick, patternNo);
-
-      channels->note(0, tick, patternNo);
-      channels->note(1, tick, patternNo);
-      channels->note(2, tick, patternNo);
-      channels->note(3, tick, patternNo);        
-
+      channels->note(0, toneNo, patternNo+loopStart);
+      channels->note(1, toneNo, patternNo+loopStart);
+      channels->note(2, toneNo, patternNo+loopStart);
+      channels->note(3, toneNo, patternNo+loopStart);       
+      channels->note(4, toneNo, patternNo+loopStart);
+      channels->note(5, toneNo, patternNo+loopStart);
+      channels->note(6, toneNo, patternNo+loopStart);
+      channels->note(7, toneNo, patternNo+loopStart);      
       channels->stop();
       
       xSemaphoreGive(syncSemaphore);
       }
     }
+    
 
-    tick++;
-    tick %= TONE_NUM;
+    toneNo++;
+    toneNo %= TONE_NUM;
 
-    if (tick == 0) {
+    if (toneNo == 0) {
         patternNo++;
 
-        if (patternNo >= PATTERN_NUM) {
-            patternNo = 0;
+        // if (patternNo >= PATTERN_NUM) {
+        //     patternNo = 0;
+        // }
+        if (patternNo <= loopStart) {//現在の進行パタンがスタート位置より手前なら
+            patternNo = loopStart;
+        }else if (patternNo > loopEnd) {//現在の進行パタンがエンド位置より後ろなら
+            patternNo = loopStart;
         }
     }
     // delay(1);
@@ -1540,28 +1549,6 @@ void setup()
     &taskHandle[1],//NULL,// タスクハンドルを取得
     1 // タスクを実行するコア（0または1）
   );
-
-  
-
-  // createChannelsが完了するまでmusicTaskをブロック
-    // while (!createChannels()) {
-    //     delay(1);
-    // }
-    
-
-    // sndbufferedF = readTones(patternNo);
-
-    // // //同期用セマフォを解放
-    // xSemaphoreGive(syncSemaphore);
-
-    // soundsetup();
-
-  // int textsize = M5Cardputer.Display.height() / 60;
-  // if (textsize == 0) {
-  //     textsize = 1;
-  // }
-
-  // M5Cardputer.Display.setTextSize(textsize);
 
   editor.getCursorConfig("/init/param/editor.txt");//エディタカーソルの位置をよみこむ
 
@@ -1643,8 +1630,7 @@ unsigned long startTime = millis();
 
 void loop()
 {
-
-    // 現在の時間を取得する
+  // 現在の時間を取得する
   uint32_t currentTime = millis();
   // 前フレーム処理後からの経過時間を計算する
   uint32_t elapsedTime = currentTime - startTime;
@@ -1675,16 +1661,13 @@ void loop()
       else{btnpF = false;pressedBtnID=-1;}
 
     }else{
-      
       if(btnpms%500 >= 250){
         // Serial.println("定期的にtrue");
         btnpF = true;
       }else{
         btnpF = false;
       }
-
       if(btnpF!= prebtnpF)btnptick++;
-
     }
 
     btnpms += elapsedTime;
@@ -1716,7 +1699,6 @@ void loop()
             keychar = M5Cardputer.Keyboard.getKeyValue(keyPos).value_second;//対応する文字コードを格納
           }
 
-        
         // if (status.fn&&keychar == PS2_LEFTARROW) {keychar = PS2_LEFTARROW;editor.editorProcessKeypress(keychar, SPIFFS);}
         // if (status.fn&&keychar == PS2_DOWNARROW) {keychar = PS2_DOWNARROW;editor.editorProcessKeypress(keychar, SPIFFS);}
         // if (status.fn&&keychar == PS2_UPARROW) {keychar = PS2_UPARROW;editor.editorProcessKeypress(keychar, SPIFFS);}
@@ -1780,9 +1762,7 @@ void loop()
           }
         }
 
-      }else if (isEditMode == TFT_EDIT_MODE) {
-
-        
+      }else if (isEditMode == TFT_EDIT_MODE){
         if(textMoveF){
           
              if (M5Cardputer.Keyboard.isKeyPressed(',')) {
@@ -1938,7 +1918,10 @@ if (elapsedTime >= 1000/fps||fps==-1) {
     { // reload
 
       appfileName = "/init/main.lua";
+
+      patternNo = 0;//音楽開始位置を0にリセット
       
+
       firstLoopF = true;
       toneflag = false;
       sfxflag = false;
@@ -1972,9 +1955,13 @@ if (elapsedTime >= 1000/fps||fps==-1) {
       game->init();//resume()（再開処理）を呼び出し、ゲームで利用する関数などを準備
       // tunes.resume();
     }
-
+    
     // ui.showTouchEventInfo( tft, 0, 100 );//タッチイベントを視覚化する
-    ui.showInfo( M5Cardputer.Display, 200, 120 );//ボタン情報、フレームレート情報などを表示します。
+    if(patternNo<10)M5Cardputer.Display.fillRect(200,120,16,8,TFT_BLACK);
+    ui.showInfo( M5Cardputer.Display, 200, 112 );//ボタン情報、フレームレート情報などを表示します。
+    M5Cardputer.Display.setCursor(200,120);
+    M5Cardputer.Display.println(patternNo);
+    
 
     if(enemyF){
 

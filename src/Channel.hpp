@@ -17,8 +17,8 @@
 // 新しい構造体
 struct ChannelData {
     bool onoffF;
-    uint8_t loopStart;
-    uint8_t loopEnd;
+    // uint8_t loopStart;
+    // uint8_t loopEnd;
     float hz;
     uint8_t pitch;
     uint8_t octave;
@@ -27,7 +27,7 @@ struct ChannelData {
     uint8_t volume;
     uint8_t effectNo;
     uint8_t tickNo;
-    uint8_t looplen;
+    // uint8_t looplen;
 };
 
 class Channel : public m5::Speaker_Class {//M5のスピーカークラス
