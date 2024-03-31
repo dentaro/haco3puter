@@ -356,12 +356,13 @@ extern uint8_t loopStart;
 extern uint8_t loopEnd;
 extern uint8_t looplen;
 extern uint8_t patternNo;
+extern float bpm;
 
 int runLuaGame::l_music(lua_State* L) {
   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
   musicNo = lua_tointeger(L, 1); // 未使用
   masterVol = lua_tointeger(L, 2);
-  int _tickTime = lua_tointeger(L, 3);
+  int _bpm = lua_tointeger(L, 3);
   
   // Retrieve loop start and end values
   uint8_t _loopStart = lua_tointeger(L, 4);
@@ -376,7 +377,9 @@ int runLuaGame::l_music(lua_State* L) {
   }
   
   // Set tickTime to default value if not provided
-  tickTime = (_tickTime != NULL) ? _tickTime : 100;
+  bpm = (_bpm != NULL) ? _bpm : 120;
+
+  tickTime = (60000 / float(bpm))/8;//BPMから1拍あたりのミリ秒数を計算し、tickTimeに代入　8chで割る
   
   // Set patternNo and loop lengths
   patternNo = 0;
@@ -391,7 +394,7 @@ int runLuaGame::l_music(lua_State* L) {
 //   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
 //   musicNo = lua_tointeger(L, 1);//今のところ使ってない
 //   masterVol = lua_tointeger(L, 2);
-//   int _tickTime = lua_tointeger(L, 3);
+//   int _bpm = lua_tointeger(L, 3);
 //   uint8_t _loopStart = 0;
 //   uint8_t _loopEnd = 63;
 //   _loopStart = lua_tointeger(L, 4);
@@ -404,7 +407,7 @@ int runLuaGame::l_music(lua_State* L) {
 //   loopEnd = _loopEnd;
 //   looplen = (loopEnd - loopStart)+1;
 
-//   if(_tickTime!=NULL){tickTime = _tickTime;}
+//   if(_bpm!=NULL){tickTime = _bpm;}
 
 //   if(_loopStart!=NULL&&_loopEnd!=NULL){
 //     loopStart = 0;

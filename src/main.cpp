@@ -30,6 +30,7 @@ using namespace std;
 uint8_t loopStart = 0;
 uint8_t loopEnd = 63;
 uint8_t looplen = (loopEnd - loopStart)+1;
+float bpm = 120;
 
 int8_t soundState = SOUND_OFF_STATE;
 uint8_t musicNo = 255;
@@ -38,11 +39,11 @@ Channel* channels = new Channel();
 // // //音関連
 uint8_t buffAreaNo = 0;
 uint8_t gEfectNo = 0;
-float effectVal = 0.0f;
+uint8_t effectVal = 0.0f;
 uint8_t toneNo = 0;
 uint8_t instrument = 0;
 uint8_t targetChannelNo = 0;//描画編集する効果音番号を設定（sfx(n)のnで効果音番号を指定することで作った効果音がなる）
-uint8_t tickTime = 100;//スピードがかえられる
+uint8_t tickTime = 125;//125ms*8chはbpm60
 uint8_t tickSpeed = 5;//連動してない
 uint8_t patternNo = 0;//0~63
 
