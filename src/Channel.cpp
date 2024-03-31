@@ -144,21 +144,43 @@ void Channel::resetTones(uint8_t tickNo, uint8_t _sfxno, uint8_t _pitch, uint8_t
     this->notedata[_sfxno][tickNo].effectNo = _effectNo;
 }
 
-bool Channel::note(uint8_t channelno, uint8_t toneNo, uint8_t _patternNo)
+extern uint8_t sfxTickNo;
+
+bool Channel::sfx(uint8_t channelno, uint8_t _sfxNo, uint8_t _sfxVol, float _sfxspeed)
+{
+    // speakerEffectNo = this->notedata[channelno][(toneTickNo%TONE_NUM)+bufNo*32].effectNo;//noteパラメータの情報でエフェクトをかける
+
+    M5.Speaker.setChannelVolume(channelno, _sfxVol);//SFX
+
+    M5.Speaker.tone(
+        this->notedata[channelno][(sfxTickNo%TONE_NUM)].hz, 
+        100,//tickTime, 
+        channelno, 
+        true,
+        _tone_wav[_sfxNo],
+        16,
+        false);
+    
+    vTaskDelay(tickTime/CHANNEL_NUM);
+
+    return true;
+}
+
+bool Channel::note(uint8_t channelno, uint8_t toneTickNo, uint8_t _patternNo)
 {
     uint8_t bufNo = _patternNo%2;
     // uint8_t targetChNo = patterns[_patternNo][channelno];
     
-    speakerEffectNo = this->notedata[channelno][(toneNo%TONE_NUM)+bufNo*32].effectNo;//noteパラメータの情報でエフェクトをかける
+    speakerEffectNo = this->notedata[channelno][(toneTickNo%TONE_NUM)+bufNo*32].effectNo;//noteパラメータの情報でエフェクトをかける
 
-    M5.Speaker.setChannelVolume(channelno, this->notedata[channelno][toneNo%32].volume*32);//BGM
+    M5.Speaker.setChannelVolume(channelno, this->notedata[channelno][toneTickNo%32].volume*32);//BGM
 
     M5.Speaker.tone(
-        this->notedata[channelno][(toneNo%TONE_NUM)+bufNo*32].hz, 
+        this->notedata[channelno][(toneTickNo%TONE_NUM)+bufNo*32].hz, 
         tickTime, 
         channelno, 
         true,
-        _tone_wav[this->notedata[channelno][(toneNo%TONE_NUM)+bufNo*32].instrument],
+        _tone_wav[this->notedata[channelno][(toneTickNo%TONE_NUM)+bufNo*32].instrument],
         16,
         false);
     

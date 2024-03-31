@@ -27,6 +27,12 @@ using namespace std;
 #define SOUND_OFF_STATE 0
 #define SOUND_ON_STATE  1
 
+bool sfxflag = false;
+uint8_t sfxNo = 0;
+uint8_t sfxChNo = 0;
+uint8_t sfxVol = 0;
+float sfxspeed = 100;
+
 uint8_t loopStart = 0;
 uint8_t loopEnd = 63;
 uint8_t looplen = (loopEnd - loopStart)+1;
@@ -40,7 +46,8 @@ Channel* channels = new Channel();
 uint8_t buffAreaNo = 0;
 uint8_t gEfectNo = 0;
 uint8_t effectVal = 0.0f;
-uint8_t toneNo = 0;
+uint8_t toneTickNo = 0;
+uint8_t sfxTickNo = 0;
 uint8_t instrument = 0;
 uint8_t targetChannelNo = 0;//描画編集する効果音番号を設定（sfx(n)のnで効果音番号を指定することで作った効果音がなる）
 uint8_t tickTime = 125;//125ms*8chはbpm60
@@ -417,7 +424,6 @@ String appNameStr = "init";
 int8_t soundNo = -1;
 float soundSpeed = 1.0;
 bool musicflag = false;
-bool sfxflag = false;
 bool toneflag = false;
 bool firstLoopF = true;
 
@@ -1149,7 +1155,7 @@ void controlMusicVisual(){
         //   }
         // }
 
-        if(toneNo == i){
+        if(toneTickNo == i){
 
           tft.fillRect(i*4, 92-(pit + (oct-4)*12)*4, 4,4, gethaco3Col(10));
           tft.fillRect(i*4, 124-(vol)*4, 4,4, gethaco3Col(10));
@@ -1174,7 +1180,7 @@ void showMusicVisual(){//操作できないタイプ
       uint8_t oct = channels->notedata[targetChannelNo][i+bufNo*32].octave;
       uint8_t pit = channels->notedata[targetChannelNo][i+bufNo*32].pitch;
 
-      if(toneNo == i){
+      if(toneTickNo == i){
         tft.fillRect(i*4, 92-(pit + (oct-4)*12)*4, 4,4, gethaco3Col(10));
         tft.fillRect(i*4, 124-(vol)*4, 4,4, gethaco3Col(10));
       }else{
@@ -1209,6 +1215,7 @@ for(uint8_t chx = 0; chx<2; chx++)
 
       if(efn!=0)
       tft.drawPixel(i*2+(64*chx)+1,(23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(5));
+
       tft.drawPixel(i*2+(64*chx),  (23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(5));
       tft.drawPixel(i*2+(64*chx),  (31-(vol))+(32*chy), gethaco3Col(5));
       
@@ -1224,7 +1231,7 @@ for(uint8_t chx = 0; chx<2; chx++)
       uint8_t oct = channels->notedata[chx*4+chy][i+bufNo*32].octave;
       uint8_t pit = channels->notedata[chx*4+chy][i+bufNo*32].pitch;
 
-      if(toneNo == i){
+      if(toneTickNo == i){
         tft.drawPixel(i*2+(64*chx),  (23-(pit + (oct-4)*12))+(32*chy), gethaco3Col(10));
         tft.drawPixel(i*2+(64*chx),  (31-(vol))+(32*chy), gethaco3Col(10));
       }else{
@@ -1469,31 +1476,47 @@ void createChTask(void *pvParameters) {
 void musicTask(void *pvParameters) {
   while (true) {
     
+    // if(musicflag){
     // 何らかの条件が満たされるまで待機
     if(sndbufferedF){//次の音がバッファされたら
       if (xSemaphoreTake(syncSemaphore, portMAX_DELAY)) {
       // 同期が取れたらここに入る
       channels->begin();
       channels->setVolume(masterVol); // 0-255
-      channels->note(0, toneNo, patternNo+loopStart);
-      channels->note(1, toneNo, patternNo+loopStart);
-      channels->note(2, toneNo, patternNo+loopStart);
-      channels->note(3, toneNo, patternNo+loopStart);       
-      channels->note(4, toneNo, patternNo+loopStart);
-      channels->note(5, toneNo, patternNo+loopStart);
-      channels->note(6, toneNo, patternNo+loopStart);
-      channels->note(7, toneNo, patternNo+loopStart);      
+      channels->note(0, toneTickNo, patternNo+loopStart);
+      channels->note(1, toneTickNo, patternNo+loopStart);
+      channels->note(2, toneTickNo, patternNo+loopStart);
+      channels->note(3, toneTickNo, patternNo+loopStart);       
+      channels->note(4, toneTickNo, patternNo+loopStart);
+      channels->note(5, toneTickNo, patternNo+loopStart);
+      // channels->note(6, toneTickNo, patternNo+loopStart);
+      // channels->note(7, toneTickNo, patternNo+loopStart);   
+
       channels->stop();
       
       xSemaphoreGive(syncSemaphore);
       }
     }
-    
+    // }
 
-    toneNo++;
-    toneNo %= TONE_NUM;
+    //効果音は別にならす(ひとまず同発2音)
 
-    if (toneNo == 0) {
+    if(sfxflag==true){
+      channels->begin();
+      channels->setVolume(masterVol); // 0-255
+      channels->sfx(sfxChNo+6, sfxNo, sfxVol, sfxspeed);
+      channels->stop();
+      // channels->note(6, toneTickNo, patternNo+loopStart);
+      // sfxflag=false; 
+      sfxflag=false;
+      // if(sfxTickNo == 31){sfxflag=false;sfxTickNo=0;}
+      // else {sfxTickNo++;}
+    }
+
+    toneTickNo++;
+    toneTickNo %= TONE_NUM;
+
+    if (toneTickNo == 0) {
         patternNo++;
 
         // if (patternNo >= PATTERN_NUM) {
@@ -1505,12 +1528,13 @@ void musicTask(void *pvParameters) {
             patternNo = loopStart;
         }
     }
-    // delay(1);
-      }
+    delay(1);
+  }
   
 
   // 他の処理や適切な待機時間をここに追加
   // delay(10);
+  
     
 }
 
@@ -1522,8 +1546,6 @@ void setup()
   M5Cardputer.begin(cfg);
   SPIFFS.begin();
   ui.begin( M5Cardputer.Display, 16, 1);
-
-  
 
   // 同期用セマフォの作成
   syncSemaphore = xSemaphoreCreateBinary();
@@ -1618,6 +1640,10 @@ void setup()
 
   savedAppfileName = appfileName;//起動したゲームのパスを取得しておく
   firstBootF = false;
+
+  if (isEditMode == TFT_SOUNDEDIT_MODE) {
+    patternNo = 0;
+  }
 }
 
 bool btnpF = false;
@@ -1704,7 +1730,7 @@ void loop()
         // if (status.fn&&keychar == PS2_DOWNARROW) {keychar = PS2_DOWNARROW;editor.editorProcessKeypress(keychar, SPIFFS);}
         // if (status.fn&&keychar == PS2_UPARROW) {keychar = PS2_UPARROW;editor.editorProcessKeypress(keychar, SPIFFS);}
       if (isEditMode == TFT_SOUNDEDIT_MODE) {
-        
+
         if (M5Cardputer.Keyboard.isKeyPressed('~')) {
         pressedBtnID = 0;
       } else if (M5Cardputer.Keyboard.isKeyPressed(',')) {
@@ -1921,7 +1947,6 @@ if (elapsedTime >= 1000/fps||fps==-1) {
       appfileName = "/init/main.lua";
 
       patternNo = 0;//音楽開始位置を0にリセット
-      
 
       firstLoopF = true;
       toneflag = false;

@@ -54,6 +54,7 @@ public:
   void setPatterns(uint8_t _patternNo, uint8_t _ch, uint8_t _patternID);
   uint8_t getPatternID(uint8_t _patternNo, uint8_t _chno);
   bool note(uint8_t channelno, uint8_t tick, uint8_t _patternNo);
+  bool sfx(uint8_t channelno, uint8_t _sfxNo, uint8_t _sfxVol, float _sfxspeed);
   uint8_t gettick();
   void resetTones(uint8_t tickNo, uint8_t _sfxno, uint8_t _pitch, uint8_t _octave, uint8_t _volume, uint8_t _instrument, uint8_t _effectNo);
   void setupHz();

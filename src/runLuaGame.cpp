@@ -347,7 +347,7 @@ int runLuaGame::l_fset(lua_State* L){
   else if(val == 1)sprbits[sprno] |=  bitfilter;//スプライト番号sprnoのfbitno番目を1に
   return 0;
 }
-
+extern bool musicflag;
 extern uint8_t musicNo;
 // extern uint8_t musicSpeed;
 extern uint8_t tickTime;//100がデフォルト
@@ -363,6 +363,7 @@ int runLuaGame::l_music(lua_State* L) {
   musicNo = lua_tointeger(L, 1); // 未使用
   masterVol = lua_tointeger(L, 2);
   int _bpm = lua_tointeger(L, 3);
+  musicflag = true;
   
   // Retrieve loop start and end values
   uint8_t _loopStart = lua_tointeger(L, 4);
@@ -386,6 +387,7 @@ int runLuaGame::l_music(lua_State* L) {
   loopStart = _loopStart;
   loopEnd = _loopEnd;
   looplen = (loopEnd - loopStart) + 1;
+  
 
   return 0;
 }
@@ -419,13 +421,24 @@ int runLuaGame::l_music(lua_State* L) {
 //   return 0;
 // }
 
+extern bool sfxflag;
+extern uint8_t sfxNo;
+extern uint8_t sfxChNo;
+extern uint8_t sfxVol;
+extern float sfxspeed;
+
 int runLuaGame::l_sfx(lua_State* L){
   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
-  // sfxflag = true;
-  // int8_t sn = lua_tointeger(L, 1);
-  // float spd = lua_tonumber(L, 2);
-  // soundNo = sn;
-  // soundSpeed = spd;
+  uint8_t chno = lua_tointeger(L, 1);
+  uint8_t sfxn = lua_tointeger(L, 2);
+  uint8_t vol = lua_tointeger(L, 3);
+  float spd = lua_tonumber(L, 4);
+  sfxflag = true;
+  sfxChNo = chno;
+  sfxNo = chno;
+  sfxVol = vol;
+  sfxspeed = spd;
+
   return 0;
 }
 int runLuaGame::l_go2(lua_State* L){
