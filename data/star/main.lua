@@ -24,7 +24,7 @@ light = {
 }
 
 function _init()
-  snd(0,64)
+  music(0,64,100,0,63)
 end
 
 function _update()

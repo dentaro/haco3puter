@@ -7,7 +7,7 @@ function setup()
 end
 
 function _init()--1回だけ
-  music(2,64,130,0,3)
+  music(2,64,60,0,3)
   -- music(2,64,130,4,7)--musicNo, Volume0-255,tempo slow140 ~ high60 loopstart,loopend
   fps(30)
     setup()
