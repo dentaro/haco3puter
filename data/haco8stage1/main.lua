@@ -34,6 +34,7 @@ nf=2 -- アニメーションするフレーム数(足踏みは2フレーム)
 t=0
 
 function _init()
+  music(0,64,100,0,63)
   -- map(0,0,0,0,8,8,"/init/map/0.png")
 end
 
@@ -46,22 +47,22 @@ function input()
   local prey = y
   local pressed=false
 
-  if (btn(1)>=2) then
+  if btnp(1) then
    x = x-1
    d=1
    pressed=true
   end
-  if (btn(2)>=2) then
+  if btnp(2) then
     x = x+1
    d=2
    pressed=true
   end
-  if (btn(3)>=2) then
+  if btnp(3) then
    y = y-1
    d=3
    pressed=true
   end
-  if (btn(4)>=2) then
+  if btnp(4) then
    y = y+1
    d=4
    pressed=true
@@ -75,6 +76,7 @@ function input()
 
   if collision(x,y) == true then
     -- sound=8
+    sfx(0,3,255,100)--ch,sfxno,vol,speed
     x=prex
     y=prey
   end

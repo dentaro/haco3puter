@@ -36,7 +36,7 @@ function _init()
   -- ここに書いてもグローバル変数になるようにしたい
   -- x=8
   -- y=8
-  -- music(0);
+  music(-1,64,60,0,3)
 end
 
 
@@ -71,6 +71,7 @@ function input()
   end
 
   if collition(x,y) == true then
+    sfx(0,1,255,100)--ch,sfxno,vol,speed
     x=prex
     y=prey
   end
