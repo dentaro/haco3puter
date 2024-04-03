@@ -35,6 +35,29 @@ The file structure within the data folder is listed in the cheat sheet.
 
 By following these steps, you can create a new project with PlatformIO and start developing haco3.
 
+The sample Lua program is located in data/appname/main.lua. By referencing the cheat sheet, you can edit main.lua to create or modify the game. Once you've finished coding, please upload it to SPIFFS again.
+
+Additionally, you can use the built-in editor to edit Lua code and adjust parameters without needing a PC.
+
+We're using Lua 5.3, so please refer to Lua's website for Lua syntax.
+
+Press "~" (Aa+esc) to return to the menu.
+
+Press "OK" to confirm the app selection.
+
+Press "|" to toggle between the editor and execution modes.
+
+In editor mode:
+
+Press "fn" to switch, and the right bar will turn orange.
+
+The mode changes, and you can use the cursor and other features.
+
+Press "Aa" to switch, and the right bar will turn blue.
+
+You can toggle between uppercase and lowercase and perform other tasks.
+
+Enjoy!
 --
 
 コンパイル手順
