@@ -146,22 +146,22 @@ void Channel::resetTones(uint8_t tickNo, uint8_t _sfxno, uint8_t _pitch, uint8_t
 
 extern uint8_t sfxTickNo;
 
-bool Channel::sfx(uint8_t channelno, uint8_t _sfxNo, uint8_t _sfxVol, float _sfxspeed)
+bool Channel::sfx(uint8_t channelno, uint8_t _sfxno, uint8_t _wavNo, uint8_t _sfxVol, float _sfxspeed)
 {
     // speakerEffectNo = this->notedata[channelno][(toneTickNo%TONE_NUM)+bufNo*32].effectNo;//noteパラメータの情報でエフェクトをかける
 
     M5.Speaker.setChannelVolume(channelno, _sfxVol);//SFX
 
     M5.Speaker.tone(
-        this->notedata[channelno][(sfxTickNo%TONE_NUM)].hz, 
-        100,//tickTime, 
+        this->sfxdata[_sfxno][sfxTickNo].hz, 
+        _sfxspeed,//tickTime, 
         channelno, 
         true,
-        _tone_wav[_sfxNo],
+        _tone_wav[_wavNo],
         16,
         false);
     
-    vTaskDelay(tickTime/CHANNEL_NUM);
+    vTaskDelay(_sfxspeed/2);
 
     return true;
 }

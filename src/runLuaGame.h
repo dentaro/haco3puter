@@ -177,6 +177,8 @@ struct CameraObj {
     static int l_fget(lua_State* L);
     static int l_fset(lua_State* L);
     static int l_sfx(lua_State* L);
+    static int l_sfxini(lua_State* L);
+
     static int l_music(lua_State* L);
     static int l_go2(lua_State* L);
     static int l_gstat(lua_State* L);

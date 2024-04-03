@@ -11,7 +11,10 @@
 
 #define PATTERN_NUM 64//64パタン用意するとメモリが足らない
 #define TONE_NUM 32
-#define CHANNEL_NUM 8//
+#define CHANNEL_NUM 8
+
+#define SFX_NUM 8
+
 
 
 // 新しい構造体
@@ -34,6 +37,7 @@ class Channel : public m5::Speaker_Class {//M5のスピーカークラス
 // class Channel : public Speaker_Class {//独自のスピーカークラス
 public:
   ChannelData notedata[CHANNEL_NUM][TONE_NUM*2];  // 構造体をメンバ変数として持つ（バックバッファ2パタン8チャンネル分しかデータは持たない）
+  ChannelData sfxdata[SFX_NUM][TONE_NUM];
   uint8_t patterns[PATTERN_NUM][CHANNEL_NUM];//３２パターン（小節）8チャンネルにSfxNo0~63を３２ノート割り付けるための配列
   // uint8_t speakerEffectNo = 0;
 
@@ -54,7 +58,7 @@ public:
   void setPatterns(uint8_t _patternNo, uint8_t _ch, uint8_t _patternID);
   uint8_t getPatternID(uint8_t _patternNo, uint8_t _chno);
   bool note(uint8_t channelno, uint8_t tick, uint8_t _patternNo);
-  bool sfx(uint8_t channelno, uint8_t _sfxNo, uint8_t _sfxVol, float _sfxspeed);
+  bool sfx(uint8_t channelno, uint8_t _sfxno, uint8_t _sfxNo, uint8_t _sfxVol, float _sfxspeed);
   uint8_t gettick();
   void resetTones(uint8_t tickNo, uint8_t _sfxno, uint8_t _pitch, uint8_t _octave, uint8_t _volume, uint8_t _instrument, uint8_t _effectNo);
   void setupHz();

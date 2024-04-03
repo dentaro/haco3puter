@@ -29,6 +29,7 @@ using namespace std;
 
 bool sfxflag = false;
 uint8_t sfxNo = 0;
+uint8_t wavNo = 0;
 uint8_t sfxChNo = 0;
 uint8_t sfxVol = 0;
 float sfxspeed = 100;
@@ -1318,6 +1319,107 @@ String filePath = "/init/sound/patterns/" + String(musicNo) + ".csv";
   return true;
 }
 
+uint8_t sfxlistNo = 0;
+uint8_t sfxnos[8] ={0,1,2,3,4,5,6,7};
+void readsfxlist() {
+  // 読み込む効果音を外部ファイルを使い指定する
+  File fr = SPIFFS.open("/init/sound/sfxes/sfxlist"+String(sfxlistNo)+".txt", "r");
+  String line;
+  int index = 0; // インデックスを追加
+  while (fr.available()) {
+    line = fr.readStringUntil('\n');
+    if (!line.isEmpty()) {
+      int commaIndex = line.indexOf(',');
+      String val = line.substring(0, commaIndex);
+      if (val.toInt() != 0) { // 0 でないことを確認
+        sfxnos[index] = val.toInt(); // インデックスを使用して sfxnos 配列に値を代入
+        index++; // インデックスをインクリメント
+        if (index >= 8) break; // sfxnos 配列がオーバーフローしないようにする
+      }
+    }
+  }
+  fr.close();
+}
+
+
+bool readsfx()//行32列9のデータ
+{
+  //読み込む効果音を外部ファイルを使い指定する
+  readsfxlist();
+  // トーンファイルを読み込む
+  File fr;
+  for (int sfxno = 0; sfxno < SFX_NUM; sfxno++)
+    {
+    uint8_t addTones[32];
+    String line;
+    int j = 0;
+
+    fr = SPIFFS.open("/init/sound/sfxes/"+String(sfxnos[sfxno])+".csv", "r");
+    if (!fr)
+    {
+      Serial.println("Failed to open tones.csv");
+      return true;//とりあえず進む
+    }
+    while (fr.available())
+    {
+      line = fr.readStringUntil('\n');
+      // line.trim(); // 空白を削除
+      if (!line.isEmpty())
+      {
+        int commaIndex = line.indexOf(',');
+        if (commaIndex != -1)
+        {
+          String val = line.substring(0, commaIndex);//一個目はここで読み込む
+
+          addTones[0] = val.toInt();
+          if(j==0)channels->sfxdata[sfxno][0].onoffF = addTones[0];
+          else if(j==1)channels->sfxdata[sfxno][0].instrument = addTones[0];//pitch
+          else if(j==2)channels->sfxdata[sfxno][0].pitch = addTones[0];
+          else if(j==3){
+            channels->sfxdata[sfxno][0].octave = addTones[0];
+            channels->sfxdata[sfxno][0].hz = channels->calculateFrequency(
+              channels->sfxdata[sfxno][0].pitch, 
+              channels->sfxdata[sfxno][0].octave);
+          }
+          else if(j==4)channels->sfxdata[sfxno][0].sfxno = addTones[0];
+          else if(j==5)channels->sfxdata[sfxno][0].volume = addTones[0];
+
+          for (int i = 1; i < 32; i++)
+          {
+
+            int nextCommaIndex = line.indexOf(',', commaIndex + 1);
+            if (nextCommaIndex != -1)
+            {
+              val = line.substring(commaIndex + 1, nextCommaIndex);
+              addTones[i] = val.toInt();
+              commaIndex = nextCommaIndex;
+
+              if(j==0)channels->sfxdata[sfxno][i].onoffF = addTones[i];
+              else if(j==1)channels->sfxdata[sfxno][i].instrument = addTones[i];//pitch
+              else if(j==2)channels->sfxdata[sfxno][i].pitch = addTones[i];
+              else if(j==3){
+                channels->sfxdata[sfxno][i].octave = addTones[i];
+                channels->sfxdata[sfxno][i].hz = channels->calculateFrequency(
+                  channels->sfxdata[sfxno][i].pitch, 
+                  channels->sfxdata[sfxno][i].octave);
+              }
+              else if(j==4)channels->sfxdata[sfxno][i].sfxno = addTones[i];
+              else if(j==5)channels->sfxdata[sfxno][i].volume = addTones[i];
+
+            }
+            
+          }
+          j++;
+        }
+      }
+    }
+    
+  }
+  fr.close();
+
+  //すべてが終わったらtrueを返す
+  return true;
+}
 
 bool readTones(uint8_t _patternNo)//行32列9のデータ
 {
@@ -1371,9 +1473,6 @@ bool readTones(uint8_t _patternNo)//行32列9のデータ
               else if(j==4)channels->notedata[chno][i+bufNo*32].sfxno = addTones[i];
               else if(j==5)channels->notedata[chno][i+bufNo*32].volume = addTones[i];
 
-              // channels->notedata[chno][i+bufNo*32].loopStart = loopStart;
-              // channels->notedata[chno][i+bufNo*32].loopEnd = loopEnd;
-              // notedata[chno][i+bufNo*32].effectNo = looplen; 
             }
             
           }
@@ -1389,76 +1488,6 @@ bool readTones(uint8_t _patternNo)//行32列9のデータ
   return true;
 }
 
-// bool readTones(uint8_t _patternNo)//行9列32のデータ
-// {
-//   // トーンファイルを読み込む
-//   File fr;
-//   for (int chno = 0; chno < CHANNEL_NUM; chno++)
-//     {
-//     uint8_t addTones[8];
-//     String line;
-//     int j = 0;
-//     uint8_t patternID = 0;
-    
-//     patternID = channels->getPatternID( _patternNo, chno);
-//     // File fr = SPIFFS.open("/init/sound/tones/"+String(patternID+buffAreaNo)+".csv", "r");
-//     String filePath = "/init/sound/tones/"+String(patternID)+".csv";
-
-//     if (SPIFFS.exists(filePath)) 
-//     {
-//       }else {
-//       // ファイルが存在しない場合の処理
-//       Serial.println("File does not exist");
-//       musicNo = 255;
-//     }
-//       fr = SPIFFS.open(filePath, "r");
-//       if (!fr)
-//       {
-//         Serial.println("Failed to open tones.csv");
-//         return true;//とりあえず進む
-//       }
-
-//       while (fr.available())
-//       {
-//         line = fr.readStringUntil('\n');
-//         // line.trim(); // 空白を削除
-//         if (!line.isEmpty())
-//         {
-//           int commaIndex = line.indexOf(',');
-//           if (commaIndex != -1)
-//           {
-//             String val = line.substring(0, commaIndex);
-
-//             for (int i = 0; i < 8; i++)
-//             {
-//               int nextCommaIndex = line.indexOf(',', commaIndex + 1);
-//               if (nextCommaIndex != -1)
-//               {
-//                 val = line.substring(commaIndex + 1, nextCommaIndex);
-//                 addTones[i] = val.toInt();
-//                 commaIndex = nextCommaIndex;
-//               }
-//             }
-
-//             channels->setTones(
-//                 1,
-//                 addTones[0], addTones[1], //loopStart, loopEnd,
-//                 addTones[2], addTones[3],//instrument, pitch,
-//                 addTones[4], addTones[5],//octave, sfxno, 
-//                 addTones[6], addTones[7], j, chno, _patternNo+1);//volume, effectNo,tickNo,chno
-//             j++;
-//           }
-//         }
-//       }
-      
-    
-//     fr.close();
-    
-//   }
-//   //すべてが終わったらtrueを返す
-//   return true;
-// }
-
 void createChTask(void *pvParameters) {
     while (true) {
       while (!createChannels()) {
@@ -1472,6 +1501,23 @@ void createChTask(void *pvParameters) {
     }
 }
 
+void sfxTask(void *pvParameters) {
+  while (true) {
+if(sfxflag==true){
+      channels->begin();
+      channels->setVolume(masterVol); // 0-255
+
+      for(int n=0;n < 32;n++){
+        sfxTickNo = n;
+        channels->sfx(sfxChNo, sfxNo, wavNo, sfxVol, sfxspeed);
+      }
+      channels->stop();
+
+      if(sfxTickNo == 31){sfxflag=false;sfxTickNo=0;}
+    }
+        delay(1);
+  }
+}
 
 void musicTask(void *pvParameters) {
   while (true) {
@@ -1499,19 +1545,8 @@ void musicTask(void *pvParameters) {
     }
     // }
 
-    //効果音は別にならす(ひとまず同発2音)
-
-    if(sfxflag==true){
-      channels->begin();
-      channels->setVolume(masterVol); // 0-255
-      channels->sfx(sfxChNo+6, sfxNo, sfxVol, sfxspeed);
-      channels->stop();
-      // channels->note(6, toneTickNo, patternNo+loopStart);
-      // sfxflag=false; 
-      sfxflag=false;
-      // if(sfxTickNo == 31){sfxflag=false;sfxTickNo=0;}
-      // else {sfxTickNo++;}
-    }
+    //効果音は別にならす(ひとまず同発2ch)
+    
 
     toneTickNo++;
     toneTickNo %= TONE_NUM;
@@ -1530,12 +1565,9 @@ void musicTask(void *pvParameters) {
     }
     delay(1);
   }
-  
-
   // 他の処理や適切な待機時間をここに追加
   // delay(10);
-  
-    
+
 }
 
 void setup()
@@ -1546,6 +1578,8 @@ void setup()
   M5Cardputer.begin(cfg);
   SPIFFS.begin();
   ui.begin( M5Cardputer.Display, 16, 1);
+
+  readsfx();
 
   // 同期用セマフォの作成
   syncSemaphore = xSemaphoreCreateBinary();
@@ -1566,7 +1600,18 @@ void setup()
   xTaskCreatePinnedToCore(
     musicTask,
     "musicTask",
-    8192,////1024だと動く//1500だと非力だけど動く//2048だと動く
+    4096,////1024だと動く//1500だと非力だけど動く//2048だと動く
+    NULL,
+    3,
+    &taskHandle[1],//NULL,// タスクハンドルを取得
+    1 // タスクを実行するコア（0または1）
+  );
+
+  // sfxTask タスクの作成（コア1で実行）
+  xTaskCreatePinnedToCore(
+    sfxTask,
+    "sfxcTask",
+    4096,////1024だと動く//1500だと非力だけど動く//2048だと動く
     NULL,
     2,
     &taskHandle[1],//NULL,// タスクハンドルを取得
@@ -1644,6 +1689,8 @@ void setup()
   if (isEditMode == TFT_SOUNDEDIT_MODE) {
     patternNo = 0;
   }
+
+  
 }
 
 bool btnpF = false;

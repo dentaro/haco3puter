@@ -31,6 +31,13 @@ extern int HACO3_C14;
 extern int HACO3_C15;
 extern MyTFT_eSprite tft;
 
+extern bool sfxflag;
+extern uint8_t sfxNo;
+extern uint8_t wavNo;
+extern uint8_t sfxChNo;
+extern uint8_t sfxVol;
+extern float sfxspeed;
+extern uint8_t sfxmusicNo;
 
 extern uint8_t masterVol;
 
@@ -349,6 +356,7 @@ int runLuaGame::l_fset(lua_State* L){
 }
 extern bool musicflag;
 extern uint8_t musicNo;
+
 // extern uint8_t musicSpeed;
 extern uint8_t tickTime;//100がデフォルト
 
@@ -420,28 +428,36 @@ int runLuaGame::l_music(lua_State* L) {
 
 //   return 0;
 // }
-
-extern bool sfxflag;
-extern uint8_t sfxNo;
-extern uint8_t sfxChNo;
-extern uint8_t sfxVol;
-extern float sfxspeed;
-
-int runLuaGame::l_sfx(lua_State* L){
+extern uint8_t sfxlistNo;
+int runLuaGame::l_sfxini(lua_State* L)
+{
   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  sfxlistNo = lua_tointeger(L, 1);
+  return 0;
+}
+
+int runLuaGame::l_sfx(lua_State* L)
+{
+  runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+  // 
   uint8_t chno = lua_tointeger(L, 1);
-  uint8_t sfxn = lua_tointeger(L, 2);
-  uint8_t vol = lua_tointeger(L, 3);
-  float spd = lua_tonumber(L, 4);
+  uint8_t sfxno = lua_tointeger(L, 2);
+  uint8_t wavn = lua_tointeger(L, 3);
+  uint8_t vol = lua_tointeger(L, 4);
+  float spd = lua_tonumber(L, 5);
+  // sfxmusicNo = mno;
   sfxflag = true;
   sfxChNo = chno;
-  sfxNo = chno;
+  sfxNo = sfxno;
+  wavNo = wavn;
   sfxVol = vol;
   sfxspeed = spd;
 
   return 0;
 }
-int runLuaGame::l_go2(lua_State* L){
+
+int runLuaGame::l_go2(lua_State* L)
+{
   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
   appfileName = lua_tostring(L, 1);
   int gs = lua_tointeger(L, 2);
@@ -449,6 +465,7 @@ int runLuaGame::l_go2(lua_State* L){
   if(gs != NULL){
     gameState = gs;
   }
+
   // appfileName = (String)text;
   // setFileName(appfileName);
   // appfileName = text;
@@ -3066,6 +3083,10 @@ luaL_openlibs(L);
   lua_pushlightuserdata(L, this);
   lua_pushcclosure(L, l_sfx, 1);
   lua_setglobal(L, "sfx");
+
+  lua_pushlightuserdata(L, this);
+  lua_pushcclosure(L, l_sfxini, 1);
+  lua_setglobal(L, "sfxini");
 
   lua_pushlightuserdata(L, this);
   lua_pushcclosure(L, l_go2, 1);
