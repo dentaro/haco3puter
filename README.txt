@@ -1,5 +1,5 @@
 
-haco3puter is a Lua game engine that runs on M5Stack. You can do Pico-8-like programming with it.
+haco3puter is a Lua game engine that runs on M5cardputer. You can do Pico-8-like programming with it.
 
 try the following steps, which might help you:
 
