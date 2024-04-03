@@ -1,3 +1,6 @@
+
+haco3puter is a Lua game engine that runs on M5Stack. You can do Pico-8-like programming with it.
+
 try the following steps, which might help you:
 
 Open Visual Studio Code: To use PlatformIO, you need to open Visual Studio Code.
@@ -70,6 +73,7 @@ After drawing a 256*256 world map in 8 colors, use the included processing appli
 
 Enjoy!
 --
+M5cardputer上で動く、Luaのゲームエンジンhaco3puterです。pico8ライクなプログラミングができます。
 
 コンパイル手順
  Visual Studio Codeを開く: PlatformIOを使用するためには、Visual Studio Codeを開きます。
