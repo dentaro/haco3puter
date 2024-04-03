@@ -59,6 +59,15 @@ Press "Aa" to switch, and the right bar will turn blue.
 
 You can toggle between uppercase and lowercase and perform other tasks.
 
+
+We achieve functionalities such as rendering 1000 stars, map deployment, and music playback entirely without utilizing PSRAM.
+
+Please utilize the PSRAM area for modifications or other purposes.
+
+For regular maps, draw them in 8 colors as PNG files and place them in /data/init/map, where they will be automatically generated.
+
+After drawing a 256*256 world map in 8 colors, use the included processing application to export it as a binary file. Then, place it in /data/init/param/map to create your original map.
+
 Enjoy!
 --
 
@@ -135,12 +144,10 @@ Lua5.3を使用していますので、Luaの表記法はそちらを参照し�
 
 チートシートを作りました。改善していきますが、間違いが結構あるとおもいますのでその時はコードを参照して下さい。
 
-treemap.txtにアプリのファイル構成図を書いてあります。
-
 PSRAMをまったく使わずに、1000個の星やマップ展開、音楽再生などを実現しています。
 
 PSRAM領域は改造などの際にお使い下さい
 
-通常のマップは8色のpngを描き、/data/init/mapの中に置けば自動で生成してくれます。
+通常のマップは8色でpngを描き、/data/init/mapの中に置けば自動で生成してくれます。
 
 256*256のワールドマップは、8色のpngを描いたあとで、同梱のprocessingアプリでbinを書き出し、/data/init/param/mapの中に置けば、オリジナルのマップが作れます。
