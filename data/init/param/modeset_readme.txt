@@ -2,10 +2,16 @@
 
 デバック用起動モードの設定です。（最後にカンマが必要）
 
-0,RUNモード（通常はこちらに戻しておいてください）
+0,通常起動モード（通常はこちらに戻しておいてください）
+setFileName("/init/main.lua");
 
-1,EDITモード：コード編集画面で立ち上げるモードです
+1,ASPモード：共有のWiFiに入るWiFi接続モード
 
-2,WIFIモード：現在非対応
+wifiDebugRequest = true;
+wifiDebugSelf = false;
 
-3,SOUNDEDITモード：音の編集モードで立ち上げます。
+2,APモード：ESP32自体がアクセスポイントになるWiFi接続モード
+
+wifiDebugRequest = true;
+wifiDebugSelf = true;
+

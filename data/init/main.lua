@@ -12,6 +12,7 @@ end
 
 function _init()
   -- fs = list() 
+
   fnum = list(-1)--　　-1でファイルの数を取得
 end
 
