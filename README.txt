@@ -77,7 +77,9 @@ Enjoy!
 Name:haco3puter
 Board:M5Stack StampS3
 Framework:Arduino 
+
 に設定してください。 
+
 ・ビルドと書き込みテスト: ソースコードが準備できたら、PlatformIOのビルド機能を使用してコンパイルし、マイクロコントローラに書き込み、空のプロジェクトが正しくコンパイルされるかを確かめてください。 
 haco3puterのソースコードをダウンロードし、空のプロジェクトのうち、 以下を上書きしてください。 
 platformio.ini
