@@ -18,6 +18,7 @@ Press the Create New Project button and set the following:
 Name: haco3puter
 Board: M5Stack StampS3
 Framework: Arduino
+
 Build and upload test:
 After preparing the source code, use PlatformIO's build feature to compile and write to the microcontroller to verify if the empty project compiles correctly.
 Download the source code for haco3puter and overwrite the following in the empty project:
