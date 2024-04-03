@@ -150,9 +150,9 @@ class MyTFT_eSPI : public M5GFX {
     }
 };
 
-class MyTFT_eSprite : public LGFX_Sprite {
+class MyTFT_eSprite : public M5Canvas {
   public:
-    MyTFT_eSprite(MyTFT_eSPI* tft): LGFX_Sprite(tft){
+    MyTFT_eSprite(MyTFT_eSPI* tft): M5Canvas(tft){
       _mytft = tft;
     }
 
@@ -205,8 +205,8 @@ class MapTile
   int addXTileNo, addYTileNo = 0;//中央からの相対的なタイルナンバー -1,1
   int preAddXTileNo, preAddYTileNo = 0;//中央からの相対的なタイルナンバー -1,1
   std::string m_url;
-  LGFX_Sprite buff_sprite;
-  LGFX_Sprite* buff_sprite_p;
+  M5Canvas buff_sprite;
+  M5Canvas* buff_sprite_p;
   MapTile(){};
 
   void begin(int _objNo, int _xtile, int _ytile,int _ztile, std::string _m_url)
@@ -227,7 +227,7 @@ class MapTile
     buff_sprite_p = &buff_sprite;//オブジェクトのアドレスをコピーして、ポインタを格納
   }
 
-  LGFX_Sprite* getSpritePtr(){return buff_sprite_p;}
+  M5Canvas* getSpritePtr(){return buff_sprite_p;}
   int getObjNo(){return objNo;}
 
   void setPreXtileNo(int _preXtileNo){preXtileNo = _preXtileNo;}
@@ -386,23 +386,15 @@ public:
 
   M5GFX* lcd; // M5GFXクラスへのポインタ//タッチポイントとれる
 
-  LGFX_Sprite layoutSprite_list[BUF_PNG_NUM];
+  M5Canvas layoutSprite_list[BUF_PNG_NUM];
 
   //M5GFX* lgfx;//グラフィックのみ
-  // LGFX_Sprite flickUiSprite;//フリック展開パネル用
+  // M5Canvas flickUiSprite;//フリック展開パネル用
   // inline void update( M5GFX& _lcd );
   inline void update2( M5GFX& _lcd );
 
   inline void begin(M5GFX& _lcd, int _colBit = 24, int _rotateNo = 0, bool _calibF = false);
 
-  // void begin( M5GFX& _lcd, int _colBit, int _rotateNo);
-  // void begin( M5GFX &_lcd, int _colBit, int _rotateNo, bool _calibF);
-
-  // void begin( M5GFX& _lcd, std::string _host, int _shiftNum, int _colBit, int _rotateNo, bool _calibF );
-  // void begin( M5GFX& _lcd, int _shiftNum, int _colBit, int _rotateNo, bool _calibF );
-  // void begin(M5GFX& _lcd);
-  // void begin();
-  
   inline void circle(M5GFX* _lcd, uint16_t c, int fillF);
   inline void rect(M5GFX* _lcd, uint16_t c, int fillF);
 
@@ -410,7 +402,27 @@ public:
 
   inline int getPreEvent();
 
-  inline void showInfo( LGFX_Sprite& _lcd, int _infox, int _infoy);
+  inline void showInfo( M5GFX& _screen, int _infox, int _infoy)
+{
+  // フレームレート情報などを表示します。
+  _screen.setTextSize(1);
+  _screen.setFont(&lgfxJapanGothicP_8);
+  _screen.setTextColor(TFT_WHITE,TFT_BLACK);
+  _screen.setCursor(_infox, _infoy);
+  _screen.print(fps);
+  _screen.print("FPS");
+  ++frame_count;
+  unsigned long currentTimeMicros = micros();
+  unsigned long sec = currentTimeMicros / 1000000;
+  if (psec != sec)
+  {
+    psec = sec;
+    fps = frame_count;
+    frame_count = 0;
+    _screen.setAddrWindow(0, 0, _screen.width(), _screen.height());
+  }
+}
+
 
   //---Map用関数
 
@@ -482,7 +494,7 @@ public:
 
   inline void getTilePos(double lat, double lon, int zoom_level);
 
-  inline void drawPngFile(LGFX_Sprite sprite, fs::SPIFFSFS* _SPIFFS,const char * _path, int32_t _x, int32_t _y);
+  inline void drawPngFile(M5Canvas sprite, fs::SPIFFSFS* _SPIFFS,const char * _path, int32_t _x, int32_t _y);
 
 };
 
@@ -502,17 +514,12 @@ inline M5GFX_DentaroUI::M5GFX_DentaroUI(M5GFX* _lcd) : lcd(_lcd) {}
 
 inline void M5GFX_DentaroUI::begin(M5GFX& _lcd, int _colBit, int _rotateNo, bool _calibF) {
     lcd = &_lcd;
-    // _lcd.init();
-    // _lcd.begin();
     _lcd.startWrite(); // CSアサート開始
     _lcd.setColorDepth(_colBit);
-    // touchCalibrationF = _calibF;
-    // // begin(_lcd);
     _lcd.setRotation(_rotateNo);
-    // showSavedCalData(_lcd); // タッチキャリブレーションの値を表示
 }
 
-inline void M5GFX_DentaroUI::drawPngFile(LGFX_Sprite sprite, fs::SPIFFSFS* _SPIFFS,const char * _path, int32_t _x, int32_t _y){
+inline void M5GFX_DentaroUI::drawPngFile(M5Canvas sprite, fs::SPIFFSFS* _SPIFFS,const char * _path, int32_t _x, int32_t _y){
   // sprite.drawPngFile(_SPIFFS, _path, _x, _y);
 }
 
