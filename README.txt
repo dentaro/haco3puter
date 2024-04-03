@@ -35,6 +35,8 @@ The file structure within the data folder is listed in the cheat sheet.
 
 By following these steps, you can create a new project with PlatformIO and start developing haco3.
 
+![Cheat sheet](https://github.com/dentaro/haco3puter/assets/77978725/d7df572a-010e-4564-acb7-3d68c7cb6878)
+
 The sample Lua program is located in data/appname/main.lua. By referencing the cheat sheet, you can edit main.lua to create or modify the game. Once you've finished coding, please upload it to SPIFFS again.
 
 Additionally, you can use the built-in editor to edit Lua code and adjust parameters without needing a PC.
