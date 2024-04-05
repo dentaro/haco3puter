@@ -96,7 +96,7 @@ static int menu_padding = 36;
 int gameState = 0;
 uint8_t toolNo = 0;
 
-uint8_t masterVol = 64;
+uint8_t masterVol = 0;
 
 String data = "> ";
 
@@ -1528,7 +1528,11 @@ void musicTask(void *pvParameters) {
       if (xSemaphoreTake(syncSemaphore, portMAX_DELAY)) {
       // 同期が取れたらここに入る
       channels->begin();
-      channels->setVolume(masterVol); // 0-255
+      if(musicflag){
+        channels->setVolume(masterVol); // 0-255
+      }else{
+        channels->setVolume(0); // 0-255
+      }
       channels->note(0, toneTickNo, patternNo+loopStart);
       channels->note(1, toneTickNo, patternNo+loopStart);
       channels->note(2, toneTickNo, patternNo+loopStart);
@@ -1689,7 +1693,10 @@ void setup()
   if (isEditMode == TFT_SOUNDEDIT_MODE) {
     patternNo = 0;
   }
+  // masterVol = 0;
 
+  musicflag = false;
+  masterVol = 0;
   
 }
 
@@ -1953,6 +1960,7 @@ if (elapsedTime >= 1000/fps||fps==-1) {
     }else if(ch_viewmode == CH8_VIEW_MODE){
       showMusicVisual8ch();
     }
+    
     showMusicInfo();
     //最終出力
     tft.setPivot(0, 0);

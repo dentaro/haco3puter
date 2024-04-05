@@ -166,6 +166,8 @@ bool Channel::sfx(uint8_t channelno, uint8_t _sfxno, uint8_t _wavNo, uint8_t _sf
     return true;
 }
 
+extern uint8_t masterVol;
+
 bool Channel::note(uint8_t channelno, uint8_t toneTickNo, uint8_t _patternNo)
 {
     uint8_t bufNo = _patternNo%2;
@@ -173,6 +175,7 @@ bool Channel::note(uint8_t channelno, uint8_t toneTickNo, uint8_t _patternNo)
     
     speakerEffectNo = this->notedata[channelno][(toneTickNo%TONE_NUM)+bufNo*32].effectNo;//noteパラメータの情報でエフェクトをかける
 
+    M5.Speaker.setVolume(masterVol);
     M5.Speaker.setChannelVolume(channelno, this->notedata[channelno][toneTickNo%32].volume*32);//BGM
 
     M5.Speaker.tone(
