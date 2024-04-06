@@ -19,7 +19,9 @@ using namespace std;
 #include "Editor.h"
 #include "Channel.hpp"
 // #include <esp_now.h>
-// #include <WiFi.h>
+#include <WebServer.h>//なぜか入れないといけない
+#include <WiFi.h>
+#include <ESPWebDAV.h>
 #include <M5GFX_DentaroUI.hpp>
 #include <map>
 #include "M5Cardputer.h"
@@ -1569,14 +1571,112 @@ void musicTask(void *pvParameters) {
   }
 }
 
+ESPWebDAV dav;
+WiFiServer tcp(80);
+IPAddress wifi_ip;
+unsigned long webDAV_wtime;
+
+// タスク
+void task(void *pvParameters) {
+  struct tm timeInfoOld = {};
+  struct tm timeInfo;
+  File file;
+
+  while (1) {
+    if (getLocalTime(&timeInfo)) {
+      if (timeInfo.tm_min != timeInfoOld.tm_min || timeInfo.tm_hour != timeInfoOld.tm_hour) {
+        Serial.print("Local Time  : ");
+        Serial.printf("%04d-%02d-%02d ", timeInfo.tm_year + 1900, timeInfo.tm_mon + 1, timeInfo.tm_mday);
+        Serial.printf("%02d:%02d:%02d\n", timeInfo.tm_hour, timeInfo.tm_min, timeInfo.tm_sec);
+        timeInfoOld = timeInfo;
+        char filename[24];
+        if(file){
+          file.close();
+        }
+        // snprintf(filename, 24, "/%04d-%02d-%02d_%02d%02d.txt", timeInfo.tm_year + 1900, timeInfo.tm_mon + 1, timeInfo.tm_mday, timeInfo.tm_hour, timeInfo.tm_min);
+        // file = SPIFFS.open(filename, "w");
+      }
+      file.println(millis());
+    }
+
+    delay(200);
+  }
+}
+
+void wifisetup() {
+  Serial.begin(115200);
+  delay(500);
+
+  WiFi.begin("wf310", "2670222a");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  // Serial.println();
+  // Serial.println("WiFi Connected.");
+  // Serial.printf("IP Address  : ");
+  // Serial.println(WiFi.localIP());
+  wifi_ip = WiFi.localIP();
+}
+
+void wifibegin(){
+
+  // Wi-Fi begin
+  WiFi.begin();
+  Serial.printf("Wi-Fi begin");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println();
+  Serial.print("IP Address  : ");
+  Serial.println(WiFi.localIP());
+  Serial.print("WebDav      : file://");
+  Serial.print(WiFi.localIP());
+  Serial.println("/DavWWWRoot");
+
+  // NTP begin
+  configTime(9 * 3600, 0, "pool.ntp.org");
+  struct tm timeInfo;
+  if (getLocalTime(&timeInfo)) {
+    Serial.print("Local Time  : ");
+    Serial.printf("%04d-%02d-%02d ", timeInfo.tm_year + 1900, timeInfo.tm_mon + 1, timeInfo.tm_mday);
+    Serial.printf("%02d:%02d:%02d\n", timeInfo.tm_hour, timeInfo.tm_min, timeInfo.tm_sec);
+  }
+
+  // WebDav begin
+  tcp.begin();
+  dav.begin(&tcp, &SPIFFS);
+  dav.setTransferStatusCallback([](const char* name, int percent, bool receive) {
+    Serial.printf("%s: '%s': %d%%\n", receive ? "recv" : "send", name, percent);
+  });
+
+  // Mac Address Write
+  uint8_t mac[6];
+  esp_read_mac(mac, ESP_MAC_WIFI_STA);
+  Serial.printf("Mac Address : %02X:%02X:%02X:%02X:%02X:%02X\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  SPIFFS.remove("/mac.txt");
+  auto starttime = millis();
+  File file = SPIFFS.open("/mac.txt", "w");
+  file.printf("Mac Address : %02X:%02X:%02X:%02X:%02X:%02X\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  file.close();
+  webDAV_wtime =  millis() - starttime;
+  // Serial.printf("Write time  : %d ms\n", millis() - starttime);
+}
+
 void setup()
 {
   Serial.begin(115200);
+  
   auto cfg = M5.config();
   // M5.begin(cfg);
   M5Cardputer.begin(cfg);
   SPIFFS.begin();
+
   ui.begin( M5Cardputer.Display, 16, 1);
+
+  wifisetup();
+  wifibegin();//SPIFFS.beginの後にしないといけない
 
   readsfx();
 
@@ -1584,11 +1684,22 @@ void setup()
   syncSemaphore = xSemaphoreCreateBinary();
   nextFrameSemaphore = xSemaphoreCreateBinary();
 
+// Task begin
+  xTaskCreateUniversal(
+    task,           // タスク関数
+    "task",         // タスク名(あまり意味はない)
+    4096,           // スタックサイズ
+    NULL,           // 引数
+    1,              // 優先度(loopが2で大きい方が高い)
+    NULL,           // タスクハンドル
+    APP_CPU_NUM     // 実行するCPU(PRO_CPU_NUM or APP_CPU_NUM)
+  );
+  
   // createChannelsTask タスクの作成（コア0で実行）
   xTaskCreatePinnedToCore(
     createChTask,
     "createChTask",
-    8192,//~3000だと非力だけど動く//2048,4096なら動く//1024だと動かない
+    4096,//~3000だと非力だけど動く//2048,4096なら動く//1024だと動かない
     NULL,
     1,
     &taskHandle[0],  // タスクハンドルを取得
@@ -1601,7 +1712,7 @@ void setup()
     "musicTask",
     4096,////1024だと動く//1500だと非力だけど動く//2048だと動く
     NULL,
-    3,
+    3,// 優先度(loopが2で大きい方が高い)
     &taskHandle[1],//NULL,// タスクハンドルを取得
     1 // タスクを実行するコア（0または1）
   );
@@ -1612,7 +1723,7 @@ void setup()
     "sfxcTask",
     4096,////1024だと動く//1500だと非力だけど動く//2048だと動く
     NULL,
-    2,
+    2,// 優先度(loopが2で大きい方が高い)
     &taskHandle[1],//NULL,// タスクハンドルを取得
     1 // タスクを実行するコア（0または1）
   );
@@ -1644,6 +1755,7 @@ void setup()
   file.read(gIMGBuf64, 8192);
   sprite64.drawPng(gIMGBuf64, 8192,0,0);
   file.close();
+
   delete[] gIMGBuf64;
 
   sprite64cnos_vector.clear();//初期化処理
@@ -1706,6 +1818,8 @@ unsigned long startTime = millis();
 
 void loop()
 {
+
+  dav.handleClient();
   // 現在の時間を取得する
   uint32_t currentTime = millis();
   // 前フレーム処理後からの経過時間を計算する
@@ -2065,6 +2179,18 @@ if (elapsedTime >= 1000/fps||fps==-1) {
         toolNo = 0;
       }
 
+    tft.setCursor(0,10);
+    tft.println(wifi_ip.toString());
+
+    configTime(9 * 3600, 0, "pool.ntp.org");
+    struct tm timeInfo;
+    if (getLocalTime(&timeInfo)) {
+      tft.printf("%04d-%02d-%02d ", timeInfo.tm_year + 1900, timeInfo.tm_mon + 1, timeInfo.tm_mday);
+      tft.printf("%02d:%02d:%02d\n", timeInfo.tm_hour, timeInfo.tm_min, timeInfo.tm_sec);
+    }
+    tft.println(webDAV_wtime);
+    
+
      //最終出力
     tft.setPivot(0, 0);
     tft.pushRotateZoom(&M5Cardputer.Display, 40, 3, 0, 1, 1);
@@ -2106,6 +2232,8 @@ if (elapsedTime >= 1000/fps||fps==-1) {
     else{tft.fillRect(155, int(curpos), 4, 1, HACO3_C8);}//１ピクセル未満の時は見えなくなるので１に
     
      //最終出力
+
+    
     tft.setPivot(0, 0);
     tft.pushRotateZoom(&M5Cardputer.Display, 40, 3, 0, 1, 1);
     
