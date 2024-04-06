@@ -1527,51 +1527,46 @@ void musicTask(void *pvParameters) {
     if(sndbufferedF){//次の音がバッファされたら
       if (xSemaphoreTake(syncSemaphore, portMAX_DELAY)) {
       // 同期が取れたらここに入る
-      channels->begin();
+      
       if(musicflag){
+        channels->begin();
         channels->setVolume(masterVol); // 0-255
+        channels->note(0, toneTickNo, patternNo+loopStart);
+        channels->note(1, toneTickNo, patternNo+loopStart);
+        channels->note(2, toneTickNo, patternNo+loopStart);
+        channels->note(3, toneTickNo, patternNo+loopStart);       
+        channels->note(4, toneTickNo, patternNo+loopStart);
+        channels->note(5, toneTickNo, patternNo+loopStart);
+        //効果音は別にならす(ひとまず同発2ch)
+        // channels->note(6, toneTickNo, patternNo+loopStart);
+        // channels->note(7, toneTickNo, patternNo+loopStart); 
+        channels->stop();
+
+        toneTickNo++;
+        toneTickNo %= TONE_NUM;
+
+        if (toneTickNo == 0) {
+            patternNo++;
+
+            // if (patternNo >= PATTERN_NUM) {
+            //     patternNo = 0;
+            // }
+            if (patternNo <= loopStart) {//現在の進行パタンがスタート位置より手前なら
+                patternNo = loopStart;
+            }else if (patternNo > loopEnd) {//現在の進行パタンがエンド位置より後ろなら
+                patternNo = loopStart;
+            }
+        }
+
       }else{
         channels->setVolume(0); // 0-255
       }
-      channels->note(0, toneTickNo, patternNo+loopStart);
-      channels->note(1, toneTickNo, patternNo+loopStart);
-      channels->note(2, toneTickNo, patternNo+loopStart);
-      channels->note(3, toneTickNo, patternNo+loopStart);       
-      channels->note(4, toneTickNo, patternNo+loopStart);
-      channels->note(5, toneTickNo, patternNo+loopStart);
-      // channels->note(6, toneTickNo, patternNo+loopStart);
-      // channels->note(7, toneTickNo, patternNo+loopStart);   
 
-      channels->stop();
-      
       xSemaphoreGive(syncSemaphore);
       }
     }
-    // }
-
-    //効果音は別にならす(ひとまず同発2ch)
-    
-
-    toneTickNo++;
-    toneTickNo %= TONE_NUM;
-
-    if (toneTickNo == 0) {
-        patternNo++;
-
-        // if (patternNo >= PATTERN_NUM) {
-        //     patternNo = 0;
-        // }
-        if (patternNo <= loopStart) {//現在の進行パタンがスタート位置より手前なら
-            patternNo = loopStart;
-        }else if (patternNo > loopEnd) {//現在の進行パタンがエンド位置より後ろなら
-            patternNo = loopStart;
-        }
-    }
     delay(1);
   }
-  // 他の処理や適切な待機時間をここに追加
-  // delay(10);
-
 }
 
 void setup()
