@@ -1,0 +1,23 @@
+#!/bin/bash
+echo "usage: $0 run|valgrind|gdb|clean [options]"
+[ -z "$EXAMPLE" ] && EXAMPLE=Simple
+exdir=$(pwd)/../${EXAMPLE}
+LIBS=${exdir}/../..
+cd ${ESP8266ARDUINO}/tests/host
+cmd="$1"
+
+[ "$cmd" = "" ] && exit 1
+
+if [ "$cmd" = clean ]; then
+    make clean
+    cd -
+    set -x
+    rm -f ../../examples/../*.o
+else
+    [ "$cmd" = run ] && cmd=""
+    shift
+    set -ex
+    make -j ULIBDIRS=$LIBS FORCE32=0 V=1 ${exdir}/${EXAMPLE}
+    $cmd ./bin/${EXAMPLE}/${EXAMPLE} "$@"
+    stty sane
+fi
