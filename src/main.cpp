@@ -6,6 +6,7 @@ using namespace std;
 #include <sstream>
 #include <cmath>
 #include "baseGame.h"
+#include "wifiGame.h"
 #include <chrono>
 #include <time.h>
 #include <fstream>
@@ -92,7 +93,7 @@ static int menu_padding = 36;
 
 #define TFT_RUN_MODE 0
 #define TFT_EDIT_MODE 1
-// #define TFT_WIFI_MODE 2
+#define TFT_WIFI_MODE 2
 #define TFT_SOUNDEDIT_MODE 3
 
 int gameState = 0;
@@ -397,6 +398,7 @@ M5Canvas sprite88_0 = M5Canvas(&tft);
 // static M5Canvas sliderSprite( &tft );//スライダ用
 
 BaseGame* game;
+WifiGame* wifiGame = NULL;
 // Tunes tunes;
 String appfileName = "";//最初に実行されるアプリ名
 String savedAppfileName = "";
@@ -1606,44 +1608,66 @@ void task(void *pvParameters) {
 void wifisetup() {
   Serial.begin(115200);
   delay(500);
+  String ssid = "wf310";
 
   WiFi.begin("wf310", "2670222a");
+
+  // while (WiFi.status() != WL_CONNECTED) {
+  //   tft.print(".");
+  //   delay(500);
+  // }
+
+  unsigned long startTime = millis();
   while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
+    if (millis() - startTime >= 1000) { // 1秒以上経過した場合は再試行
+      // tft.println("");
+      // tft.println("Failed to connect to WiFi.");
+      // return -1; // エラーコードを返すなど、エラー処理を追加する
+    }
     delay(500);
+    // tft.print(".");
   }
-  // Serial.println();
-  // Serial.println("WiFi Connected.");
-  // Serial.printf("IP Address  : ");
-  // Serial.println(WiFi.localIP());
+
   wifi_ip = WiFi.localIP();
+
+  
+
+  // tft.println();
+  // tft.println("WiFi Connected.");
+  // tft.printf("IP Address  : ");
+  // tft.println(WiFi.localIP());
+  
+  
 }
 
 void wifibegin(){
 
   // Wi-Fi begin
-  WiFi.begin();
-  Serial.printf("Wi-Fi begin");
-  while (WiFi.status() != WL_CONNECTED) {
-    Serial.print(".");
-    delay(500);
-  }
-  Serial.println();
-  Serial.print("IP Address  : ");
-  Serial.println(WiFi.localIP());
-  Serial.print("WebDav      : file://");
-  Serial.print(WiFi.localIP());
-  Serial.println("/DavWWWRoot");
+  // WiFi.begin();
+  // Serial.printf("Wi-Fi begin");
+  // while (WiFi.status() != WL_CONNECTED) {
+  //   Serial.print(".");
+  //   delay(500);
+  // }
+  // Serial.println();
+  // Serial.print("IP Address  : ");
+  // Serial.println(WiFi.localIP());
+  // Serial.print("WebDav      : file://");
+  // Serial.print(WiFi.localIP());
+  // Serial.println("/DavWWWRoot");
 
   // NTP begin
-  configTime(9 * 3600, 0, "pool.ntp.org");
-  struct tm timeInfo;
-  if (getLocalTime(&timeInfo)) {
-    Serial.print("Local Time  : ");
-    Serial.printf("%04d-%02d-%02d ", timeInfo.tm_year + 1900, timeInfo.tm_mon + 1, timeInfo.tm_mday);
-    Serial.printf("%02d:%02d:%02d\n", timeInfo.tm_hour, timeInfo.tm_min, timeInfo.tm_sec);
-  }
+  // configTime(9 * 3600, 0, "pool.ntp.org");
+  // struct tm timeInfo;
+  // if (getLocalTime(&timeInfo)) {
+  //   Serial.print("Local Time  : ");
+  //   Serial.printf("%04d-%02d-%02d ", timeInfo.tm_year + 1900, timeInfo.tm_mon + 1, timeInfo.tm_mday);
+  //   Serial.printf("%02d:%02d:%02d\n", timeInfo.tm_hour, timeInfo.tm_min, timeInfo.tm_sec);
+  // }
 
+  // server begin
+  wifiGame->init(0);//サーバーを起動する
+  
   // WebDav begin
   tcp.begin();
   dav.begin(&tcp, &SPIFFS);
@@ -1660,7 +1684,9 @@ void wifibegin(){
   File file = SPIFFS.open("/mac.txt", "w");
   file.printf("Mac Address : %02X:%02X:%02X:%02X:%02X:%02X\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
   file.close();
+
   webDAV_wtime =  millis() - starttime;
+
   // Serial.printf("Write time  : %d ms\n", millis() - starttime);
 }
 
@@ -1674,9 +1700,6 @@ void setup()
   SPIFFS.begin();
 
   ui.begin( M5Cardputer.Display, 16, 1);
-
-  wifisetup();
-  wifibegin();//SPIFFS.beginの後にしないといけない
 
   readsfx();
 
@@ -1733,6 +1756,14 @@ void setup()
   delay(50);
   
   getOpenConfig();//最初に立ち上げるゲームのパスとモードをSPIFFSのファイルopenconfig.txtから読み込む
+
+  if(isEditMode == TFT_WIFI_MODE){
+    wifiGame = new WifiGame();
+    wifisetup();
+    wifibegin();//SPIFFS.beginの後にしないといけない
+    // wifiGame->init(0);//0:STA
+    
+  }
 
   tft.setPsram( false );//DMA利用のためPSRAMは切る
   tft.createSprite( TFT_WIDTH, TFT_HEIGHT );//PSRAMを使わないギリギリ
@@ -2147,6 +2178,148 @@ if (elapsedTime >= 1000/fps||fps==-1) {
     }
     
     // ui.showTouchEventInfo( tft, 0, 100 );//タッチイベントを視覚化する
+    if(patternNo<10)M5Cardputer.Display.fillRect(200,120,16,8,TFT_BLACK);
+    ui.showInfo( M5Cardputer.Display, 200, 112 );//ボタン情報、フレームレート情報などを表示します。
+    M5Cardputer.Display.setCursor(200,120);
+    M5Cardputer.Display.println(patternNo);
+    
+
+    if(enemyF){
+
+      sprite64.setPsram(false);
+      sprite64.setColorDepth(16);    // 子スプライトの色深度
+      sprite64.createSprite(48, 48); // ゲーム画面用スプライトメモリ確保
+
+      // sprite64.drawPngFile(SPIFFS, enemyPath, enemyX, enemyY);//sprite64に展開する
+      sprite64.pushRotateZoom(&tft, enemyX, enemyY, 0, 1, 1, gethaco3Col(enemyTransCn));
+
+      sprite64.deleteSprite();//消す
+
+      // tft.drawPngFile(SPIFFS, enemyPath, enemyX, enemyY);//直接展開する
+    }
+
+      if(toolNo != 0){
+        if(toolNo==1){//カラーパレット
+          for(int j = 0; j<8; j++){
+            for(int i = 0; i<2; i++){
+              M5Cardputer.Display.fillRect(i*16,j*16,16,16,gethaco3Col(j*2+i));
+            }
+          }
+        }
+
+        toolNo = 0;
+      }
+
+    // tft.setCursor(0,10);
+    // tft.println(wifi_ip.toString());
+
+    // configTime(9 * 3600, 0, "pool.ntp.org");
+    // struct tm timeInfo;
+    // if (getLocalTime(&timeInfo)) {
+    //   tft.printf("%04d-%02d-%02d ", timeInfo.tm_year + 1900, timeInfo.tm_mon + 1, timeInfo.tm_mday);
+    //   tft.printf("%02d:%02d:%02d\n", timeInfo.tm_hour, timeInfo.tm_min, timeInfo.tm_sec);
+    // }
+    // tft.println(webDAV_wtime);
+    
+
+     //最終出力
+    tft.setPivot(0, 0);
+    tft.pushRotateZoom(&M5Cardputer.Display, 40, 3, 0, 1, 1);
+
+    if(pressedBtnID == 5){//PAGEUP(:)//キーボードからエディタ再起動
+      // restart(appfileName, 1);//appmodeでリスタートかけるので、いらないかも
+    }
+  }
+  else if(isEditMode == TFT_WIFI_MODE)
+  {
+
+
+    //ゲーム内のprint時の文字設定をしておく
+    tft.setTextSize(1);//サイズ
+    tft.setFont(&lgfxJapanGothicP_8);//日本語可
+    tft.setCursor(0, 0);//位置
+    tft.setTextWrap(true);
+
+
+    // == wifi task ==
+  if(wifiGame){ // debug mode
+    int r = wifiGame->run(remainTime);
+
+    if(r != 0){ // reload request
+      // tunes.pause();
+      game->pause();
+      free(game);
+      firstLoopF = true;
+      toneflag = false;
+      sfxflag = false;
+      musicflag = false;
+      fps = 60;
+      game = nextGameObject(&appfileName, gameState, mapFileName);
+      game->init();
+      // tunes.resume();
+    }
+  }
+
+    // == tune task ==
+    // tunes.run();
+
+    // == game task ==
+    mode = game->run(remainTime);//exitは1が返ってくる　mode=１ 次のゲームを起動
+
+    if(pressedBtnID == 9){//(|)
+    // appfileName = 
+      editor.editorSave(SPIFFS);//SPIFFSに保存
+      delay(100);//ちょっと待つ
+      reboot(appfileName, TFT_EDIT_MODE);//現状rebootしないと初期化が完全にできない
+      // restart(appfileName, 0);//初期化がうまくできない（スプライトなど）
+      // broadchat();//ファイルの中身をブロードキャスト送信する（ファイルは消えない）
+    }
+
+
+    //ESCボタンで強制終了
+    if (pressedBtnID == 0)
+    { // reload
+
+      appfileName = "/init/main.lua";
+
+      patternNo = 0;//音楽開始位置を0にリセット
+
+      firstLoopF = true;
+      toneflag = false;
+      sfxflag = false;
+      musicflag = false;
+
+      mode = 1;//exit
+      // 星用のベクター配列使用後は要素数を0にする
+      bsParamFloat.resize(0);
+      bsParamInt8t.resize(0);
+      bsParamInt16t.resize(0);
+    }
+
+    if (pressedBtnID == 9999)
+    { // reload
+      mode = 1;//exit
+      pressedBtnID = -1;
+    }
+
+    if(mode != 0){ // exit request//次のゲームを立ち上げるフラグ値、「modeが１＝次のゲームを起動」であれば
+      // tunes.pause();
+      game->pause();
+      // ui.clearAddBtns();//個別のゲーム内で追加したタッチボタンを消去する
+      free(game);
+      firstLoopF = true;
+      toneflag = false;
+      sfxflag = false;
+      musicflag = false;
+      fps = 60;
+      // txtName = appfileName;
+      game = nextGameObject(&appfileName, gameState, mapFileName);//ファイルの種類を判別して適したゲームオブジェクトを生成
+      game->init();//resume()（再開処理）を呼び出し、ゲームで利用する関数などを準備
+      // tunes.resume();
+    }
+
+    
+    
     if(patternNo<10)M5Cardputer.Display.fillRect(200,120,16,8,TFT_BLACK);
     ui.showInfo( M5Cardputer.Display, 200, 112 );//ボタン情報、フレームレート情報などを表示します。
     M5Cardputer.Display.setCursor(200,120);

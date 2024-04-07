@@ -4790,8 +4790,29 @@ int runLuaGame::l_rendr2(lua_State* L)
   return 0;
 }
 
+// int runLuaGame::l_wifiserve(lua_State* L){
+//   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
+//   self->wifiDebugSelf = false;
+//   if(lua_gettop(L) == 1){
+//     const char* text = lua_tostring(L, 1);
+//     if(strncmp(text, "ap", 3) == 0){
+//       self->wifiDebugSelf = true;
+//     }
+//   }
+//   self->wifiDebugRequest = true;
+//   return 0;
+// }
 
 int runLuaGame::run(int _remainTime){
+
+// wifiDebugRequest = true;
+
+if(wifiDebugRequest){
+    // startWifiDebug(wifiDebugSelf);
+    wifiMode = SHOW;
+    wifiDebugRequest = false;
+  }
+
 
   if(exitRequest){//次のゲームを起動するフラグがたったら
     exitRequest = false;//フラグをリセットして、
