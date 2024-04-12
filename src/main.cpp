@@ -1608,9 +1608,9 @@ void task(void *pvParameters) {
 void wifisetup() {
   Serial.begin(115200);
   delay(500);
-  String ssid = "wf310";
+  String ssid = "";
 
-  WiFi.begin("wf310", "2670222a");
+  WiFi.begin();
 
   // while (WiFi.status() != WL_CONNECTED) {
   //   tft.print(".");
@@ -1629,8 +1629,6 @@ void wifisetup() {
   }
 
   wifi_ip = WiFi.localIP();
-
-  
 
   // tft.println();
   // tft.println("WiFi Connected.");
