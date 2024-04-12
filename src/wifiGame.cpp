@@ -11,6 +11,8 @@ extern int* buttonState;
 
 Preferences preferences;
 
+extern WiFiServer tcp;
+
 void WifiGame::init(bool isSelf){
   // SPIFFS.begin();
 
@@ -19,7 +21,8 @@ void WifiGame::init(bool isSelf){
   // }else{//0
     // initSTA();
   // }
-  server.begin();
+  
+  // server.begin();
   this->resume();
 }
 
@@ -433,7 +436,7 @@ void WifiGame::postHandler(WiFiClient *c, String path, String body){
 }
 
 void WifiGame::pause(){
-  server.end();
+  tcp.end();
   WiFi.disconnect();
 }
 
@@ -441,7 +444,7 @@ void WifiGame::resume(){
 }
 // int WifiGame::run(int remainTime){
 
-//   WiFiClient client = server.available();
+//   WiFiClient client = tcp.available();
 //   if(client){
 //     // tunes.pause();
 //     Serial.println("New Client.");
@@ -625,7 +628,7 @@ void WifiGame::resume(){
 // }
 int WifiGame::run(int remainTime){
 
-  WiFiClient client = server.available();
+  WiFiClient client = tcp.available();
   if(client){
     // tunes.pause();
     Serial.println("New Client.");
@@ -642,6 +645,7 @@ int WifiGame::run(int remainTime){
       if(client.available()){
         Serial.println("available");
         char c = client.read();
+        // char c = client.read();
         Serial.write(c);
         if(c == '\n' && phase != BODY){
           Serial.println("end get");

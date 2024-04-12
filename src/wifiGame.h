@@ -28,8 +28,11 @@ class WifiGame
     };
 
 
-    WiFiServer server;
-    WifiGame():server(80){
+    // WiFiServer server;
+    // WifiGame():server(80){
+    // }
+    
+    WifiGame(){
     }
     int buttonState[CTRLBTNNUM];
     void init(bool);
