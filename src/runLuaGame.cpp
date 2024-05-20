@@ -339,7 +339,7 @@ int runLuaGame::l_mget(lua_State* L){
   runLuaGame* self = (runLuaGame*)lua_touserdata(L, lua_upvalueindex(1));
   int celx = lua_tointeger(L, 1);
   int cely = lua_tointeger(L, 2);
-  lua_pushinteger(L, mapArray[celx][cely]);
+  lua_pushinteger(L, mapArray[cely][celx]);
   return 1;
 }
 
