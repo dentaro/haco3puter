@@ -1,3 +1,4 @@
+I fixed the error where the sprite number for coordinates could not be obtained using mget.(2024/5/20)
 
 haco3puter is a Lua game engine that runs on M5cardputer. 
 https://docs.m5stack.com/en/core/Cardputer
