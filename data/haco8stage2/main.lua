@@ -15,7 +15,6 @@ function get_map_flag(sprx,spry)
 end
 
 function collition(x,y)
-  
   return get_map_flag(x-cl,y+2-cl) or get_map_flag(x+6-cl,y+2-cl) or get_map_flag(x-cl,y+7-cl) or get_map_flag(x+6-cl,y+7-cl)
 end
 
@@ -31,14 +30,14 @@ d=1 -- 方向を示す
 ipf=8 -- アニメーション1フレームについての時間(1ipf = 1/30秒)
 nf=2 -- アニメーションするフレーム数(足踏みは2フレーム)
 t=0
-
+sfxno = 0
 function _init()
   -- ここに書いてもグローバル変数になるようにしたい
   -- x=8
   -- y=8
   music(-1,64,60,0,3)
+  sfxini(1)--効果音リストを選ぶ
 end
-
 
 function input()
   local prex = x
@@ -71,7 +70,11 @@ function input()
   end
 
   if collition(x,y) == true then
-    sfx(0,1,255,100)--ch,sfxno,vol,speed
+    
+    sfx(6,sfxno,sfxno,255,30)--ch6or7,sfxno,wavno,vol,speed
+    sfxno = sfxno+1
+    sfxno = sfxno%8
+
     x=prex
     y=prey
   end
@@ -84,7 +87,6 @@ function _update()
 
   -- t = t+1
   input()
-
 
   -- lefttop=get_map_flag(x+1-cl,y+2-cl)
   -- righttop=get_map_flag(x+5-cl,y+2-cl)

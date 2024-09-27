@@ -150,10 +150,10 @@ function drawUtil()
       reboot()
     elseif cursor == 4 then
       if sndsw == true then
-        music(0,0)
+        snd(0,0)
         sndsw = false
       elseif sndsw == false then
-        music(0,64)
+        snd(0,64)
         sndsw = true
       end
     elseif cursor == 5 then
